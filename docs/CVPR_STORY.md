@@ -3,7 +3,16 @@
 Numbers: native-tube protocol, train June–July (eras A–C) → test Sep–Oct (era D), 20 materials,
 macro accuracy / macro-F1 (chance 5 %). Details and every run: `docs/TACREP_LOOP.md`.
 
-## Claim
+## Claim (v2, author's framing 2026-10-24)
+A **sensor-state-aware tactile representation** for robot learning: every observation = the sensor's
+current state + what is touched; the loaded state (recent contacts) and the unloaded state (bare gel
+between grasps) are estimated from the robot's own stream; encoder-agnostic (works on frozen
+foundation models), serves material / force / contact, learnable without labels, holds across
+months, power cycles, gel swaps and a second unit. The day signature is the diagnosis solved along
+the way, not the headline. Title: "Tactile Representations That Last: Sensor-State-Aware Touch
+Representations for Robot Learning Across Months of Use".
+
+## Claim (v1, superseded)
 A vision-based tactile image is the touched surface **plus a day-specific signature of the
 sensor itself**. Learned tactile perception latches onto that signature and fails on a later
 day. The signature can be measured and removed using only the robot's ordinary contacts — no
