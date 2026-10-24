@@ -21,7 +21,7 @@ Material: train on campaigns A+B+C (June--July, 1{,}360 episodes), test on D (Se
 \paragraph{Without labels.} The label-free state-swap adapter needs neither labels nor test-time data: it lifts frozen Sparsh-I-JEPA to \af{\IjepaAdAcc}{\IjepaAdF}\ (three seeds, $\pm$\IjepaAdAccSd; $+$\num{24.0} $[+13.9, +35.9]$), Sparsh-MAE to \MaeAdAcc\ and Sparsh-DINO to \SdinoAdAcc, with the era probe falling from \num{77}--\num{79} to \num{66}--\num{69}. The same objective from scratch gives \af{\SwapFoneRawSAcc}{\SwapFoneRawSF}\ (three seeds). On the general-vision DINOv2~\cite{oquab2024dinov2} the adapter adds only \num{3.8} $[-4.3,+11.5]$: the objective reorganises what tactile pretraining already holds. It is the best option without labels; with labels, jitter and calibration do better.
 
 \paragraph{Adaptation baselines.}
-AdaBN~\cite{li2017adabn} re-estimated over the whole test campaign reaches \SupAdaAcc\ for the eight-frame supervised CNN---but that pools 20 objects into one state. Re-estimated per session, which is what a robot has, it gives \SupAdaSessAcc\pct\ for the supervised CNN and 4--9\pct\ for every other model: with one object per session the statistics absorb the object.
+AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupAdaAcc\ for the eight-frame supervised CNN---but that pools 20 objects into one state. Re-estimated per session, which is what a robot has, it gives \SupAdaSessAcc\pct\ for the supervised CNN and 4--9\pct\ for every other model: with one object per session the statistics absorb the object.
 
 \begin{table}[t]
   \centering\small
