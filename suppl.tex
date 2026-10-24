@@ -1,0 +1,86 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+\usepackage[review]{cvpr}
+\input{preamble}
+\input{numbers}
+\usepackage{booktabs,multirow,siunitx,xcolor}
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+\def\paperID{*****}
+\def\confName{CVPR}
+\def\confYear{2027}
+\newcommand{\pct}{\,\%}
+\newcommand{\af}[2]{#1\,/\,#2}
+
+\title{Supplementary Material:\\Tactile Representations That Last}
+\author{Anonymous CVPR submission\\Paper ID \paperID}
+
+\begin{document}
+\maketitle
+
+\section{Data and protocol details}
+\paragraph{Recording.} GelSight Mini (native 1640$\times$1232, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}) on one finger of a Franka parallel gripper, ATI Nano17 on the other (host-timestamped at 130--190\,Hz; normal force valid in all campaigns). Episodes: 20 materials; commanded normal force 0.9--5\,N; stroke 10--100\,mm/s. Campaigns: A June 15--22 (15 sessions, 570 episodes), B July 6--8 (15, 450), C July 9--13 (5, 340), D September 22 -- October 15 (20, 1{,}351); every session holds one material; gel replaced between the pleather session (Oct 9, 18:42) and the cork session (19:37). Campaign D also recorded 620 bare-gel frames in 44 sessions (a start blank and lubricant pre/post pairs) and, in seven sessions, a 3-s bare-gel lead-in before every grasp.
+\paragraph{Crops and frames.} Material models read 12 native 192-px crops per episode (4 tube anchors $\times$ 3 fixed positions inside the stroke window), markers inpainted per frame; the eight-frame variant sums the 8 consecutive frames of each tube exactly (uint16). Force and contact models read whole native frames: four per episode at the 10/40/70/95\,\% quantiles of the episode's force, plus lead-in, pre-contact and onset frames (force crossing 0.05/0.2/0.5\,N) where a lead-in exists.
+\paragraph{State fields.} Per session, the position-wise sum and count of its contact crops in frame coordinates (Bayesian shrinkage with weight 2 toward the all-session mean at low coverage); a crop's own episode is left out when its own session is the source. Previous-session calibration uses the full field of the session immediately preceding in wall-clock order. The reference field $G$ is the mean over training sessions.
+\paragraph{Heads and statistics.} MLP heads (256 hidden, dropout 0.2, 40 epochs, AdamW) on standardised frozen embeddings, three seeds; per-episode pooled logits; macro accuracy, macro-F1 and the top-class share. Confidence intervals: paired bootstrap over the 20 materials (4{,}000 resamples).
+
+\section{Full material results (eight-frame inputs)}
+\begin{table}[h]\centering\small
+\caption{Eight-frame protocol (the earlier protocol; see the frame ablation). Acc\,/\,F1; own: own-session calibration (optimistic); prev.: previous session; AdaBN: whole test campaign; per session: one object per session.}
+\begin{tabular}{@{}lccccc@{}}\toprule
+model & raw & own & prev. & AdaBN & per session \\ \midrule
+supervised (3 seeds) & \af{\SupRawAcc}{\SupRawF} & \af{\SupOwnAcc}{\SupOwnF} & \af{\SupPrevAcc}{\SupPrevF} & \af{\SupAdaAcc}{\SupAdaF} & \SupAdaSessAcc \\
+supervised + swap & \af{\SupSwapRawAcc}{\SupSwapRawF} & 36.8\,/\,34.1 & \af{\SupSwapPrevAcc}{\SupSwapPrevF} & \SupSwapAdaAcc & 4.2 \\
+supervised + jitter (2 seeds) & \SupAugRawSAcc & 37.7\,/\,34.0 & 40.5 & 37.6 & 6.5 \\
+label-free swap, base (3 seeds) & \af{\SwapBaseRawAcc}{\SwapBaseRawF} & 27.6 & \af{\SwapBasePrevAcc}{\SwapBasePrevF} & 25.4 & 6.9 \\
+label-free swap + decoys (3 seeds) & \af{\SwapRawAcc}{\SwapRawF} & 27.9 & -- & 6.1 & 5.4 \\
+normal-map alignment & \af{\NmRawAcc}{\NmRawF} & 24.8 & -- & 33.6 & 8.0 \\
+normal-map + swap & \af{\NmSwapRawAcc}{\NmSwapRawF} & \af{\NmSwapOwnAcc}{\NmSwapOwnF} & -- & 34.8 & 7.3 \\
+TactSpace replica (2 seeds) & \TactSpaceRawAcc & -- & -- & -- & -- \\
+reconstruction-only floor & 7.1\,/\,2.7 & 4.4 & -- & 14.8 & 5.3 \\ \bottomrule
+\end{tabular}\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Calibration sources, supervised CNN (eight-frame), acc\,/\,F1.}
+\begin{tabular}{@{}lc@{}}\toprule
+state source & acc\,/\,F1 \\ \midrule
+none & \af{\SupRawAcc}{\SupRawF} \\
+own session, other episodes (optimistic) & \af{\SupOwnAcc}{\SupOwnF} \\
+own session, earlier episodes only (causal) & \af{\SupCausalAcc}{\SupCausalF} \\
+online (previous session, updated per contact) & \af{\SupOnlineAcc}{\SupOnlineF} \\
+previous session only & \af{\SupPrevAcc}{\SupPrevF} \\
+\quad previous session same day (11 sessions) / other day (9) & 40.4 / 30.1 \\ \bottomrule
+\end{tabular}\end{table}
+Causal estimation by number of earlier contacts $k$ in the session (acc): $k$=0 16.7, 1 8.3, 2--4 18.9, 5--9 18.7, 10--19 28.0, $\ge$20 34.0; online: 26.7, 35.0, 33.3, 31.7, 28.3, 34.2.
+
+\section{Public encoders}
+Sparsh (ViT-B/16) runs on native 192-px crops (12$\times$12 tokens) with its sinusoidal position embeddings regenerated for that grid and its own two-frame input (frames 7 and 2 of the tube, stride 5); DINOv2-base on the central 182 px of the eight-frame mean with ImageNet normalisation. Features are mean-pooled final tokens (768-d).
+\begin{table}[h]\centering\small
+\caption{Frozen public encoders: raw / own-session calibration / previous-session calibration (acc\,/\,F1) and era probe (chance 57.7).}
+\begin{tabular}{@{}lcccc@{}}\toprule
+encoder & raw & own & prev. & probe raw$\to$own \\ \midrule
+Sparsh-DINO & \af{\SdinoRawAcc}{\SdinoRawF} & \af{\SdinoOwnAcc}{\SdinoOwnF} & \af{\SdinoPrevAcc}{\SdinoPrevF} & 79.0$\to$62.5 \\
+Sparsh-MAE & \af{\MaeRawAcc}{\MaeRawF} & \af{\MaeOwnAcc}{\MaeOwnF} & \af{\MaePrevAcc}{\MaePrevF} & 76.7$\to$62.4 \\
+Sparsh-I-JEPA & \af{\IjepaRawAcc}{\IjepaRawF} & \af{\IjepaOwnAcc}{\IjepaOwnF} & \af{\IjepaPrevAcc}{\IjepaPrevF} & 76.8$\to$68.7 \\
+DINOv2 & \af{\DinovRawAcc}{\DinovRawF} & \af{\DinovOwnAcc}{\DinovOwnF} & \af{\DinovPrevAcc}{\DinovPrevF} & 71.7$\to$73.1 \\ \bottomrule
+\end{tabular}\end{table}
+
+\section{Second unit: Real Tactile MNIST}
+\begin{table}[h]\centering\small
+\caption{Digit from single touches (10-way, per-object pooled; 24 touches per object). Acc\,/\,F1; collapse in parentheses.}
+\begin{tabular}{@{}llccc@{}}\toprule
+event & row & raw & prev.-run cal. & AdaBN per run \\ \midrule
+later days & supervised & \af{\TmLaterSupRawAcc}{\TmLaterSupRawF} (\TmLaterSupRawTop\pct) & \af{\TmLaterSupPrevAcc}{\TmLaterSupPrevF} & \TmLaterSupAdaRunAcc \\
+ & frozen Sparsh-I-JEPA & \af{\TmLaterIjepaRawAcc}{\TmLaterIjepaRawF} (\TmLaterIjepaRawTop\pct) & \af{\TmLaterIjepaPrevAcc}{\TmLaterIjepaPrevF} & -- \\
+ & label-free swap & \af{\TmLaterSwapRawAcc}{\TmLaterSwapRawF} & \af{\TmLaterSwapPrevAcc}{\TmLaterSwapPrevF} & \TmLaterSwapAdaRunAcc \\
+gel swap & supervised & \af{\TmGelSupRawAcc}{\TmGelSupRawF} (\TmGelSupRawTop\pct) & \af{\TmGelSupPrevAcc}{\TmGelSupPrevF} & \TmGelSupAdaRunAcc \\
+ & frozen Sparsh-I-JEPA & \af{\TmGelIjepaRawAcc}{\TmGelIjepaRawF} (\TmGelIjepaRawTop\pct) & \af{\TmGelIjepaPrevAcc}{\TmGelIjepaPrevF} & -- \\
+ & label-free swap & \af{\TmGelSwapRawAcc}{\TmGelSwapRawF} & \af{\TmGelSwapPrevAcc}{\TmGelSwapPrevF} & \TmGelSwapAdaRunAcc \\ \bottomrule
+\end{tabular}\end{table}
+
+\section{Force and contact details}
+Marker grids are detected on the bare gel at native resolution (63--64 dots, the Mini's 7$\times$9 grid), matched to each contact frame's dots within 0.6 grid spacings, and summarised by the affine fit of the displacement field (divergence, mean displacement, net shear). A per-dot learned head (MLP on the 126-d displacement field) gives no gain over the affine summary and breaks across the gel swap (the new gel's dot order differs). Stale \emph{unloaded} references for appearance-based force: $R^2$ 0.09 (fresh) vs $-$1.9 (previous session) vs $-$13 (older); for marker geometry the force ranking survives any same-gel reference (Spearman 0.65--0.67). Contact: heads trained on the seven lead-in sessions (lead-in and pre-contact frames = no contact; onset and contact frames = contact), tested on the other 13 sessions' contact frames and 620 bare-gel frames; blank-differencing threshold fitted on the lead-in sessions.
+
+\section{Measurement details}
+Band-pass: box filters of 3 and 33 px (34--370\,\si{\micro\metre}); marker blobs of each session's own field masked (radius 30 px). Reliability of a band = correlation of two disjoint $k$-frame means of the same crop (120 episodes). Codec-row share: power at the 8/16-row harmonics of the marker-free session field over its total band power (median 3.4\pct\ vs 4.7\pct\ of the spectrum). Real Tactile MNIST: 320$\times$240 stills as delivered; bands 3--7 and 7--15 px; one run's touches at random cell positions.
+
+\end{document}
