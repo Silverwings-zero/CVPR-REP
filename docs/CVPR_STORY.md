@@ -9,8 +9,8 @@ current state + what is touched; the loaded state (recent contacts) and the unlo
 between grasps) are estimated from the robot's own stream; encoder-agnostic (works on frozen
 foundation models), serves material / force / contact, learnable without labels, holds across
 months, power cycles, gel swaps and a second unit. The day signature is the diagnosis solved along
-the way, not the headline. Title: "Tactile Representations That Last: Sensor-State-Aware Touch
-Representations for Robot Learning Across Months of Use".
+the way, not the headline. Title (v3, chosen): "Stateful Touch: Factoring a Vision-Based Tactile Sensor's State out of Its
+Images" — lead with the image-formation view, the re-render check and the method figure; tasks are consequences.
 
 ## Claim (v1, superseded)
 A vision-based tactile image is the touched surface **plus a day-specific signature of the

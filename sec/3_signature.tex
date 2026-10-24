@@ -1,16 +1,25 @@
-\section{The day signature}
+\section{A tactile image is the touch rendered through the sensor's state}
 \label{sec:signature}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig/fig_state.pdf}
+  \caption{\textbf{The sensor's state over four months.} Left: distance of each session's loaded-state field (low-frequency illumination and colour) from the June--July mean, by date; the state drifts within and between campaigns and jumps at the gel replacement. Right: change of the unloaded gel between consecutive bare-gel frames, by what happened in between: lubricant alone barely changes it, five grasps change it a little, a power cycle with no contact changes it three times as much (camera and LED re-initialisation).}
+  \label{fig:state}
+\end{figure*}
+
+We write a contact image at position $p$ in session $s$ as $x = F_s(p) + r$: the sensor's state at that position on that day, plus the touch. This section shows that $F_s$ is a real, measurable quantity: it is shared by every object touched that day, it is not in the no-contact frame, it drifts by three mechanisms, and swapping it moves a contact to another day.
 
 \paragraph{Data.}
 A GelSight Mini (1640$\times$1232 native frames, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}, printed markers) on one finger of a parallel gripper; an ATI Nano17 on the other finger records the normal force. Each episode is a grasp of one of 20 materials at a commanded force (0.9--5\,N) followed by a short stroke; the gel imprint is static during the stroke (phase-correlation shift 0.1--0.6\,px against 21--108\,px expected from the end-effector motion). Four campaigns: A (June 15--22, 570 episodes), B (July 6--8, 450), C (July 9--13, 340) and D (September 22 -- October 15, 1{,}351); every session records one material; the gel was replaced on October 9 inside campaign D. Campaign D also records bare-gel frames (620 in 44 sessions) and, in seven sessions, a bare-gel lead-in before every grasp. We never resample a frame: material models read native 192-px crops, force and contact models read whole native frames.
 
-\paragraph{Measurement.}
+\paragraph{The loaded state is shared across objects.}
 For every session we form the \emph{state field} $F_s(p)$: the mean of its contact crops at each image position $p$ (markers inpainted). For sampled contacts we correlate the band-passed crop (190--370\,\si{\micro\metre}; markers masked) with the band-passed field of (a) its own session with its episode left out, (b) another session recorded the same day with a different material, (c) a session of another campaign on the same gel, (d) a session on the other gel. Medians over sessions: \SigOwn, \SigSameDay, \SigOtherEra, \SigOtherGel\ (\cref{fig:signature}). The same-day value is close to the own-session value although the material differs, and the other-day value is close to the other-gel value: most of the stable fine-scale content of a contact image is set by the sensor on that day. The pattern is broadband (video-codec row harmonics hold 3\pct\ of its power), is strongest on rigid samples (same-day \num{0.62} for wood, ceramic, ABS, fibreglass, cork), so it is not a print-through of the sample's backing, and it does not appear in the bare gel: a session's blank frame correlates at \num{0.06} with its own contact field. Flat-fielding by a blank frame, the standard per-session reference, therefore leaves it intact (we verified: no gain).
 
-\paragraph{Drift mechanisms.}
+\paragraph{How the state drifts (\cref{fig:state}).}
 From the bare-gel frames, consecutive blanks bracket three kinds of interval. Use (a median of five grasps between blanks) changes the low-frequency illumination field by \num{0.13} grey levels while the pad's fine pattern stays at the metric floor; a session restart with no contact changes it by \num{0.40} (camera and LED re-initialisation); the gel replacement reduces the pattern correlation to \num{0.67} and, as \cref{sec:force} shows, changes the gel's mechanics. On the first gel the cumulative illumination drift tracks contacts, not hours (partial $r$ \num{0.39} vs \num{-0.20}).
 
-\paragraph{It is the shortcut.}
+\paragraph{Swapping the state moves a contact to another day.}
 We train an era classifier (June vs July) on contacts of the 15 materials recorded in both, so material cannot predict the era (balanced accuracy \num{76.6}\pct\ on held-out episodes). June contacts re-rendered under a July session's state---$x - F_{\text{June}}(p) + F_{\text{July}}(p)$---are classified as July \RerenderAtoB\pct\ of the time, against \RerenderRealA\pct\ for real June contacts, \RerenderAtoA\pct\ for June contacts re-rendered under another June state, and \RerenderRealB\pct\ for real July contacts. The state field carries most of the day cue.
 
 \paragraph{A second unit.}
