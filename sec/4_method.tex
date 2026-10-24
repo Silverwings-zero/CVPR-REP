@@ -1,7 +1,14 @@
 \section{Separating sensor state from touch}
 \label{sec:method}
 
-We model a contact image at position $p$ in session $s$ as $x = F_s(p) + r$: the sensor's loaded state at that position on that day, plus a contact-specific residual that carries the surface. $F_s$ is estimated from the stream the robot already produces---the position-wise mean of contacts---with no labels, blank frames, calibration presses or simulator. Three uses follow.
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig/fig_method.pdf}
+  \caption{\textbf{State swap on real data.} A June canvas contact $x$, its session's loaded-state field $F_s(p)$ (the position-wise mean of the session's other contacts), the residual $r=x-F_s$, the same contact re-rendered under a July session's state (the positive), and a decoy: another surface's residual placed under this crop's state and position. Bottom: the 190--370\,\si{\micro\metre} band. The encoder must match $x$ to $x'$ and not to the decoy; only the surface distinguishes them.}
+  \label{fig:method}
+\end{figure*}
+
+We model a contact image at position $p$ in session $s$ as $x = F_s(p) + r$ (\cref{fig:method}): the sensor's loaded state at that position on that day, plus a contact-specific residual that carries the surface. $F_s$ is estimated from the stream the robot already produces---the position-wise mean of contacts---with no labels, blank frames, calibration presses or simulator. Three uses follow.
 
 \paragraph{Stream calibration (test time).}
 Replace the current state by the training mean: $\tilde{x} = x - \hat F(p) + G(p)$, with $G$ the mean field over training sessions. The deployable choice of $\hat F$ is the field of the \emph{previous} session---a different object, hence carrying no information about the current one---optionally updated online with every new contact. We also report the optimistic source (the current session's other contacts) and the dependence on how many contacts have been seen.
