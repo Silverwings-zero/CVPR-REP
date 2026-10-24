@@ -1,0 +1,16 @@
+\section{Separating sensor state from touch}
+\label{sec:method}
+
+We model a contact image at position $p$ in session $s$ as $x = F_s(p) + r$: the sensor's loaded state at that position on that day, plus a contact-specific residual that carries the surface. $F_s$ is estimated from the stream the robot already produces---the position-wise mean of contacts---with no labels, blank frames, calibration presses or simulator. Three uses follow.
+
+\paragraph{Stream calibration (test time).}
+Replace the current state by the training mean: $\tilde{x} = x - \hat F(p) + G(p)$, with $G$ the mean field over training sessions. The deployable choice of $\hat F$ is the field of the \emph{previous} session---a different object, hence carrying no information about the current one---optionally updated online with every new contact. We also report the optimistic source (the current session's other contacts) and the dependence on how many contacts have been seen.
+
+\paragraph{State swap (training time, label-free).}
+Each training contact is re-rendered under another session's state, $x' = r + F_{s'}(p)$, and an encoder $f$ is trained to match $f(x)$ and $f(x')$ with InfoNCE~\cite{oord2018cpc,chen2020simclr}. Two details matter. Batches are built from a few sessions so that negatives share the anchor's state, and \emph{decoy} negatives are added: another contact's residual placed at the anchor's position under the anchor's state, $x^{d} = r_{j} + F_s(p)$, so that the only way to tell the positive from the decoy is the surface. Sessions and image positions are recording metadata; no material label enters the objective. (The gain from the decoys is measured in \cref{sec:ablation}.)
+
+\paragraph{State-swap adapter on a frozen foundation model.}
+The same objective trains a two-layer MLP on top of a frozen tactile foundation model (Sparsh~\cite{higuera2024sparsh}, 768-d tokens mean-pooled); the encoder's own two-frame input is re-rendered on both frames. Training takes twelve minutes on one GPU and needs neither labels nor any data from the deployment day.
+
+\paragraph{The unloaded state for geometry and contact.}
+Normal force and contact are not appearance quantities. We read them against the \emph{unloaded} gel, the bare-gel frames the robot sees between grasps: for force, the marker grid detected on the bare gel at native resolution is matched to the grid in a contact frame, and the affine summary of the displacement field (divergence, mean displacement, net shear) is mapped to force by a linear map; for contact, a detector operates on $f(x) - f(\text{bare gel of the session})$. \Cref{sec:force,sec:contact} show that the force reference only needs refreshing at a gel swap (a new gel has a new stiffness), whereas the appearance state drifts daily.

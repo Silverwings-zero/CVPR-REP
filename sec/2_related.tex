@@ -1,0 +1,14 @@
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Tactile representation learning.}
+Self-supervised tactile encoders are trained on large frame collections: Sparsh~\cite{higuera2024sparsh} (DINO, MAE, I-JEPA objectives on DIGIT and GelSight data), T3~\cite{t3fota2024}, UniTouch~\cite{unitouch2024} and AnyTouch~\cite{anytouch2025} (touch--vision--language alignment with sensor tokens). TactSpace~\cite{tactspace2026} aligns heterogeneous tactile modalities of the same contact into a shared latent with pairwise InfoNCE and cross-reconstruction. These works evaluate across tasks, sensors and objects, within the collection period of each dataset; none holds out a later session of the same unit. We evaluate Sparsh frozen and TactSpace re-implemented under exactly that split.
+
+\paragraph{Cross-instance invariance.}
+The closest evidence for drift comes from unit and gel swaps. SITR~\cite{sitr2025} reaches 90\pct\ zero-shot across four GelSight Minis with simulated optics randomisation, a calibration battery and a normal-map target; TacVerse~\cite{tacverse2026} reports that fine texture recognition collapses between two Mini variants while shape transfers; BIDETA~\cite{bideta2026} finds frozen Sparsh at 7\pct\ on sibling units; FEATS and FeelAnyForce~\cite{feelanyforce2025} observe that force estimation degrades on a new gel unless a geometric target is used. The convergent recipe---per-session reference subtraction, photometric jitter, a physics target and a calibration battery~\cite{unipsgel2026,ikehata2023sdm}---assumes the per-session reference is a no-contact frame. We show that the dominant day signature is not in the no-contact frame and must be estimated from contacts.
+
+\paragraph{Test-time adaptation and shortcuts.}
+AdaBN~\cite{li2017adabn} and Tent~\cite{wang2021tent} adapt normalisation statistics on unlabelled target data; both assume the target batch mixes classes. Shortcut learning~\cite{geirhos2020shortcut} describes models that satisfy labels with spurious correlates; the day signature is such a correlate that no dataset interleaving removes, because it is shared by every object touched in a sitting. Our calibration source---the previous session, a different object---and our decoy negatives are designed around this.
+
+\paragraph{Durability.}
+Commercial gels wear within minutes of sanding or tens of minutes of probing~\cite{geldurability2026}; blank-image error rises with load cycles. We add the missing measurement: how the rendering state of one unit changes with use, power cycles and gel replacement over four months, and what that does to learned perception.
