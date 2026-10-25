@@ -181,6 +181,25 @@ Collapse target = the C materials (D's low-pass state is 1.6 grey levels from C'
 from A's / B's). On the 13 shared non-replaced materials: A→B 71 raw / 86 prev; A+B→D 56 / 65 (own 73),
 jitter 70 raw / 68; A+B+C→D 9.7 / 60 (blank 64). → state subtraction undoes the collapse; for a
 balanced set jitter suffices and calibration adds 9–17 to a plain CNN.
+### Leave-one-campaign-out rotation (2026-10-25 evening; single frame; raw / prev / online = paper protocol)
+| test | train | model | raw | prev | online | own-cal (D blank-trained: bare gel) | AdaBN | AdaBN/sess |
+|---|---|---|---|---|---|---|---|---|
+| A | BCD | plain | **76.4** | 66.1 | 71.9 | 68.1 | 49.5 | 1.3 |
+| A | BCD | jitter | 73.2 | 69.5 | 71.6 | 73.4 | 51.1 | 2.5 |
+| A | BCD | blank-trained | — | 70.1 | 69.8 | 70.1 | 64.2 | 2.3 |
+| B | ACD | plain | 68.3 | 67.6 | 63.9 | 71.3 | 72.7 | 2.4 |
+| B | ACD | jitter | **75.4** | 72.3 | 68.3 | 71.0 | 67.3 | 1.9 |
+| B | ACD | blank-trained | — | 62.4 | 62.8 | 62.4 | 66.7 | 2.4 |
+| C | ABD | plain | 19.5 | 22.3 | 13.3 | 6.3 | 1.1 | 2.4 |
+| C | ABD | jitter | **30.6** | 32.4 | 26.8 | 25.8 | 7.6 | 2.1 |
+| C | ABD | blank-trained | — | 9.6 | 11.1 | 9.6 | 1.4 | 1.2 |
+| D | ABC | plain | 17.3 | 51.2 | 47.5 | 44.6 (bare gel 56.1) | 49.1 | 6.2 |
+| D | ABC | jitter | 45.2 | **55.6** | 51.2 | 51.0 (bare gel 53.8) | 40.4 | 6.5 |
+| D | ABC | blank-trained | — | 47.5 | 45.5 | 52.9 (bare gel) | 48.0 | 7.1 |
+State subtraction pays only in fold D (unseen state, same gel); it is neutral-to-harmful when the test
+state's campaign is absent but both other states are in training (A, B), and useless across the gel
+replacement (C). Blank-trained inputs are worse than raw training + test-time subtraction everywhere.
+Jitter is the most robust single choice. Frozen Sparsh-I-JEPA raw / prev per fold: A 42.8 / 37.2; B 36.4 / 36.7; C 4.5 / 2.2; D 11.2 / 35.5.
 ### Other controls
 - DANN (session-adversarial) 52.9 prev vs plain 51.2 → no gain.
 - Noise control: 8-frame means + single-frame-level noise at train and test: 34.0 prev (8 frames
