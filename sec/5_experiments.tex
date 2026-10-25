@@ -27,6 +27,7 @@ AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupA
   \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
   \caption{Material on a later day (June--July $\rightarrow$ Sep--Oct; accuracy\,/\,macro-F1 in \pct; coll.: share of episodes in the most predicted class). Prev.: previous session's state subtracted. $\dagger$: eight-frame inputs (\cref{sec:ablation}).}
   \label{tab:material}
+  \resizebox{\linewidth}{!}{%
   \begin{tabular}{@{}lccc@{}}
     \toprule
     & raw & + prev. & coll. \\
@@ -47,7 +48,7 @@ AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupA
     Sparsh-MAE + adapter & \af{\MaeAdAcc}{\MaeAdF} & -- & \MaeAdTop\pct \\
     Sparsh-DINO + adapter & \af{\SdinoAdAcc}{\SdinoAdF} & -- & \SdinoAdTop\pct \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \paragraph{Time gap.}
