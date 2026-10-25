@@ -127,3 +127,19 @@ at all (Sparsh-I-JEPA 11 → 35 %).
 The unloaded state — the bare gel between grasps — references geometry and contact: normal force
 from marker spreading transfers across months (r 0.72), and contact detection recovers from 0 % to
 86 % specificity on other days' bare gel.
+
+## Evidence state after the reviewer controls (2026-10-25 06:00)
+- The "state" is a CAMPAIGN-level rendering state of the imaging chain (weeks; same-campaign other-day
+  0.38 ≈ same-day 0.41; other campaign 0.18), PRESENT in the bare gel (0.63), fixed in image
+  coordinates; "day signature" and "absent from blanks" are retracted everywhere.
+- Within-campaign hold-out (A+C → B): raw 54 %, +prev 59 %, AdaBN 47.5, per-session AdaBN 2.6.
+  Across the break (ABC → D): raw 17 %, +prev 50.5 (3 seeds), bare gel 56.1, campaign mean 54.9;
+  AdaBN 49.1; per-session 6.2. → time is not the cause; calibration is safe, AdaBN is not.
+- Any unlabelled deployment frames estimate the state (49–56 %); own session worst; feature-space
+  centring fails. Jitter = cross-state regulariser (+3 within, +27 across). DANN no gain. Noise
+  control negative. Adapter: swap positives 34.9 vs jitter positives 23.4. Few-shot stacks (1 %: 37 → 56).
+- OPEN (running): the collapse across the break goes onto the two single-session (campaign-C) materials;
+  the June-only model (one session per material) does not collapse (37 % raw-hybrid on D) and
+  calibration does not lift it. A+B → D / A+C → D decide whether the 17 → 51 gain needs that group.
+  The paper must state the mechanism; the story holds (state factoring, safe calibration, physics),
+  but "calibration lifts every training set" cannot be claimed.
