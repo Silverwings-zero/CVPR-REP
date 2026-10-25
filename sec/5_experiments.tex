@@ -24,16 +24,16 @@ Material: train on campaigns A+B+C (June--July, 1{,}360 episodes), test on D (Se
 AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupAdaAcc\ for the eight-frame supervised CNN---but that pools 20 objects into one state. Re-estimated per session, which is what a robot has, it gives \SupAdaSessAcc\pct\ for the supervised CNN and 4--9\pct\ for every other model: with one object per session the statistics absorb the object.
 
 \begin{table}[t]
-  \centering\small
-  \caption{Material on a later day (June--July $\rightarrow$ Sep--Oct; accuracy\,/\,macro-F1 in \pct; collapse = share of episodes in the most predicted class). Prev.: previous session's state subtracted. $\dagger$: eight-frame inputs (\cref{sec:ablation}).}
+  \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
+  \caption{Material on a later day (June--July $\rightarrow$ Sep--Oct; accuracy\,/\,macro-F1 in \pct; coll.: share of episodes in the most predicted class). Prev.: previous session's state subtracted. $\dagger$: eight-frame inputs (\cref{sec:ablation}).}
   \label{tab:material}
   \begin{tabular}{@{}lccc@{}}
     \toprule
-    & raw & + prev.\ cal. & collapse \\
+    & raw & + prev. & coll. \\
     \midrule
     supervised CNN (3 seeds) & \af{\SupFoneRawSAcc}{\SupFoneRawSF} & \af{\SupFonePrevSAcc}{\SupFonePrevSF} & \SupFoneRawSTop\pct \\
-    \ + state swap & \af{\SupSwapFoneRawAcc}{\SupSwapFoneRawF} & \af{\SupSwapFonePrevSAcc}{\SupSwapFonePrevSF} & \SupSwapFoneRawTop\pct \\
-    \ + photometric jitter & \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF} & \textbf{\af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}} & \SupAugFoneRawSTop\pct \\
+    \ \ + state swap & \af{\SupSwapFoneRawAcc}{\SupSwapFoneRawF} & \af{\SupSwapFonePrevSAcc}{\SupSwapFonePrevSF} & \SupSwapFoneRawTop\pct \\
+    \ \ + photometric jitter (3 seeds) & \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF} & \textbf{\af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}} & \SupAugFoneRawSTop\pct \\
     TactSpace replica$^\dagger$ (2 seeds) & \TactSpaceRawAcc & -- & \TactSpaceRawTop\pct \\
     normal-map alignment$^\dagger$ & \af{\NmRawAcc}{\NmRawF} & -- & \NmRawTop\pct \\
     Sparsh-DINO, frozen & \af{\SdinoRawAcc}{\SdinoRawF} & \af{\SdinoPrevAcc}{\SdinoPrevF} & \SdinoRawTop\pct \\
@@ -41,10 +41,11 @@ AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupA
     Sparsh-I-JEPA, frozen & \af{\IjepaRawAcc}{\IjepaRawF} & \af{\IjepaPrevAcc}{\IjepaPrevF} & \IjepaRawTop\pct \\
     DINOv2, frozen & \af{\DinovRawAcc}{\DinovRawF} & \af{\DinovPrevAcc}{\DinovPrevF} & \DinovRawTop\pct \\
     \midrule
-    label-free state swap, from scratch (3 seeds) & \af{\SwapFoneRawSAcc}{\SwapFoneRawSF} & -- & \SwapFoneRawSTop\pct \\
-    Sparsh-I-JEPA + swap adapter (3 seeds; no labels) & \af{\IjepaAdAcc}{\IjepaAdF} & \af{\IjepaAdPrevAcc}{\IjepaAdPrevF} & \IjepaAdTop\pct \\
-    Sparsh-MAE + swap adapter & \af{\MaeAdAcc}{\MaeAdF} & -- & \MaeAdTop\pct \\
-    Sparsh-DINO + swap adapter & \af{\SdinoAdAcc}{\SdinoAdF} & -- & \SdinoAdTop\pct \\
+    \multicolumn{4}{@{}l}{\emph{without labels}} \\
+    state swap, from scratch (3 seeds) & \af{\SwapFoneRawSAcc}{\SwapFoneRawSF} & -- & \SwapFoneRawSTop\pct \\
+    Sparsh-I-JEPA + adapter (3 seeds) & \af{\IjepaAdAcc}{\IjepaAdF} & \af{\IjepaAdPrevAcc}{\IjepaAdPrevF} & \IjepaAdTop\pct \\
+    Sparsh-MAE + adapter & \af{\MaeAdAcc}{\MaeAdF} & -- & \MaeAdTop\pct \\
+    Sparsh-DINO + adapter & \af{\SdinoAdAcc}{\SdinoAdF} & -- & \SdinoAdTop\pct \\
     \bottomrule
   \end{tabular}
 \end{table}
