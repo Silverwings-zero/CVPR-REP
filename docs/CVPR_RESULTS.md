@@ -144,20 +144,21 @@ re-rendered with a July state 35.3 %** · real July 52.4 % (crops; episodes 0 / 
 
 
 ## T6. Reviewer controls and the hold-out (2026-10-25; single frame; consistent protocol unless stated)
-### Which estimate of the state (test-time; supervised / supervised + jitter; acc / F1 on D)
+### Which estimate of the state (test-time; supervised / supervised + jitter; acc / F1 on D; consistent protocol, `state_ablation_cons.json`)
 | estimate | sup | sup + jitter |
 |---|---|---|
-| none | 17.3 / 11.1 | 45.2 / 41.6 |
-| feature-space mean of the previous session | 28.8 / 22.5 | 28.2 / 21.5 |
-| mean colour of the previous session | 32.7 / 26.2 | 46.7 / 42.6 |
-| low-pass field of the previous session | 49.7 / 43.5 | 49.6 / 44.3 |
-| own session's other contacts (LOO) | 44.7 / 39.6 | 50.6 / 42.4 |
-| previous session's contacts | 50.9 / 46.0 | 54.4 / 48.7 |
-| a random other test-campaign session | 49.4 / 43.2 | 51.2 / 44.8 |
-| the session's bare gel (+ campaign offset) | 49.9 / 43.6 | 53.2 / 47.3 |
-| **mean of all 20 test-campaign sessions** | **57.1 / 50.6** | 52.0 / 45.1 |
-(raw-head protocol file `state_ablation2.json`; the consistent-protocol rerun `state_ablation_cons.json`
-replaces it in the paper when it lands.)
+| none (raw at both ends) | 17.3 / 11.1 | 45.2 / 41.6 |
+| feature-space mean of the previous session | 26.5 / 19.7 | 28.5 / 23.0 |
+| mean colour of the previous session | 43.6 / 35.5 | 48.5 / 44.9 |
+| low-pass field of the previous session | 52.5 / 46.5 | 51.4 / 46.8 |
+| own session's other contacts (LOO) | 47.7 / 41.5 | 50.2 / 45.1 |
+| previous session's contacts | 51.2 / 46.3 | **55.6 / 51.3** |
+| a random other test-campaign session | 49.0 / 42.8 | 52.2 / 47.0 |
+| the session's bare gel (+ campaign offset) | **56.1 / 50.4** | 53.8 / 48.9 |
+| mean of all 20 test-campaign sessions | 54.9 / 48.5 | 52.9 / 47.6 |
+Any unlabelled frames of the deployment work (49–56 / 52–56); own session worst of the contact-based;
+feature-space centring fails; low-pass ≈ full for the plain CNN, full +4 for the jitter CNN.
+(Raw-head protocol file `state_ablation2.json` had campaign 57.1 / blank 49.9 / meancol 32.7 — superseded.)
 ### Within-campaign hold-out, A+C → B (15 materials, chance 6.7; raw / +prev / AdaBN whole / AdaBN per session)
 | model | raw | + prev | AdaBN | AdaBN/session |
 |---|---|---|---|---|
