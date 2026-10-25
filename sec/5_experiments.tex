@@ -2,30 +2,23 @@
 \label{sec:exp}
 
 \paragraph{Protocol.}
-Material: train on campaigns A+B+C (June--July, 1{,}360 episodes), test on D (September--October, 1{,}351 episodes, 20 materials, chance 5\pct); inputs are single native 192-px crops (11.3\,\si{\micro\metre}/px; 12 per episode; frame integration and resolution are ablated in \cref{sec:ablation}); per episode, logits of its crops are pooled; we report macro accuracy, macro-F1 (collapse onto a few classes leaves macro accuracy unchanged and F1 not) and the share of test episodes assigned to the most predicted class. Heads are MLPs on frozen embeddings, three seeds; labels are used only in the heads. Because campaign D records every material in exactly one session, materials are the unit of statistics: we give paired bootstrap intervals over the 20 materials for the claims we make. The era probe (given the material, which campaign) measures day-identifiability of a representation on the training campaigns (chance \num{57.7}\pct, lower is better).
+Material: train on campaigns A+B+C (June--July, 1{,}360 episodes), test on D (September--October, 1{,}351 episodes, 20 materials, chance 5\pct); inputs are single native 192-px crops (11.3\,\si{\micro\metre}/px; 12 per episode; frame integration and resolution are ablated in \cref{sec:ablation}); per episode, logits of its crops are pooled; we report macro accuracy, macro-F1 (collapse onto a few classes leaves macro accuracy unchanged and F1 not) and the share of test episodes assigned to the most predicted class. Heads are MLPs on frozen embeddings, three seeds; labels are used only in the heads. When test embeddings are state-calibrated, the training embeddings are calibrated with \emph{their} previous session's state as well, so that the head sees one transform at both ends; raw rows use raw embeddings at both ends. Because campaign D records every material in exactly one session, materials are the unit of statistics: we give paired bootstrap intervals over the 20 materials for the claims we make. The era probe (given the material, which campaign) measures campaign-identifiability of a representation on the training campaigns (chance \num{57.7}\pct, lower is better). Every design choice was selected on campaign D; \cref{sec:timeorstate} checks the ones that matter on an independent split.
 
-\subsection{Material across months}
+\subsection{Material across the campaign break}
 \label{sec:material}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig/fig_material.pdf}
-  \caption{\textbf{Material on a later day.} Every encoder is near chance raw (open circles) and recovers with the previous session's state subtracted (orange; no training, no labels) or with the label-free state-swap adapter (green; no test-time data). June--July $\rightarrow$ September--October, 20 materials, chance 5\pct.}
+  \caption{\textbf{Material after the state change.} Every encoder is near chance raw (open circles) and recovers with the previous session's state subtracted (orange; no training, no labels) or with the label-free state-swap adapter (green; no test-time data). June--July $\rightarrow$ September--October, 20 materials, chance 5\pct.}
   \label{fig:material}
 \end{figure}
 
-\Cref{fig:material} and \cref{tab:material} give the main result. Raw, the supervised CNN scores \af{\SupFoneRawSAcc}{\SupFoneRawSF}\ (accuracy\,/\,macro-F1, three seeds; \SupFoneRawSTop\pct\ of episodes in one class), frozen Sparsh-DINO, -MAE and -I-JEPA \SdinoRawAcc, \MaeRawAcc\ and \IjepaRawAcc, a TactSpace replica \TactSpaceRawAcc, and native-resolution normal-map alignment---the calibration-free physics target of \cite{unipsgel2026}---\NmRawAcc, all with the same collapse. Stream calibration with the previous session's state lifts the supervised CNN to \af{\SupFonePrevSAcc}{\SupFonePrevSF}\ ($\pm$\SupFonePrevSAccSd\ over seeds) and Sparsh-I-JEPA to \af{\IjepaPrevAcc}{\IjepaPrevF}\ (paired bootstrap over materials $+$\num{24.2}, 95\pct\ CI $[+8.2, +41.5]$); the gain is largest when the previous session was recorded the same day (supervised, eight-frame inputs: \num{14.9}$\rightarrow$\num{40.4} over 11 such sessions, vs \num{30.1} for other-day sources), as the measurement predicts. Starting from the previous state and updating it online helps from the first contact; estimating the state from the current session alone needs 10--20 contacts.
-
-\paragraph{Photometric jitter.} Standard photometric augmentation (per-channel gain $\pm$20\pct\ and a smooth multiplicative field $\pm$15\pct) is, with single-frame inputs, a strong baseline on its own: \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF}\ raw (three seeds, $\pm$\SupAugFoneRawSAccSd) and \af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}\ with the previous session's state---the best deployable pipeline when labels are available. The same augmentation on eight-frame inputs gives only \SupAugRawSAcc\ raw (\cref{sec:ablation}): the jitter removes the low-frequency photometric part of the day signature, and integration re-introduces its fine-scale part.
-
-\paragraph{Without labels.} The label-free state-swap adapter needs neither labels nor test-time data: it lifts frozen Sparsh-I-JEPA to \af{\IjepaAdAcc}{\IjepaAdF}\ (three seeds, $\pm$\IjepaAdAccSd; $+$\num{24.0} $[+13.9, +35.9]$), Sparsh-MAE to \MaeAdAcc\ and Sparsh-DINO to \SdinoAdAcc, with the era probe falling from \num{77}--\num{79} to \num{66}--\num{69}. The same objective from scratch gives \af{\SwapFoneRawSAcc}{\SwapFoneRawSF}\ (three seeds). On the general-vision DINOv2~\cite{oquab2024dinov2} the adapter adds only \num{3.8} $[-4.3,+11.5]$: the objective reorganises what tactile pretraining already holds. It is the best option without labels; with labels, jitter and calibration do better.
-
-\paragraph{Adaptation baselines.}
-AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupAdaAcc\ for the eight-frame supervised CNN---but that pools 20 objects into one state. Re-estimated per session, which is what a robot has, it gives \SupAdaSessAcc\pct\ for the supervised CNN and 4--9\pct\ for every other model: with one object per session the statistics absorb the object.
+\Cref{fig:material} and \cref{tab:material} give the main result. Raw, the supervised CNN scores \af{\SupFoneRawSAcc}{\SupFoneRawSF}\ (accuracy\,/\,macro-F1, three seeds; \SupFoneRawSTop\pct\ of episodes in one class), frozen Sparsh-DINO, -MAE and -I-JEPA \SdinoRawAcc, \MaeRawAcc\ and \IjepaRawAcc, a TactSpace replica \TactSpaceRawAcc, and native-resolution normal-map alignment---the calibration-free physics target of \cite{unipsgel2026}---\NmRawAcc, all with the same collapse. Stream calibration with the previous session's state lifts the supervised CNN to \af{\SupFonePrevSAcc}{\SupFonePrevSF}\ and Sparsh-I-JEPA to \af{\IjepaPrevAcc}{\IjepaPrevF}\ (paired bootstrap over materials $+$\num{24.2}, 95\pct\ CI $[+8.2, +41.5]$). Starting from the previous state and updating it online helps from the first contact (\SupFoneOnlineSAcc\pct); estimating the state from the current session alone needs 10--20 contacts and ends lower (\SupFoneOwnSAcc\pct), because the session's own mean contains the object.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
-  \caption{Material on a later day (June--July $\rightarrow$ Sep--Oct; accuracy\,/\,macro-F1 in \pct; coll.: share of episodes in the most predicted class). Prev.: previous session's state subtracted. $\dagger$: eight-frame inputs (\cref{sec:ablation}).}
+  \caption{Material after the state change (June--July $\rightarrow$ Sep--Oct; accuracy\,/\,macro-F1 in \pct; coll.: share of episodes in the most predicted class). Prev.: previous session's state subtracted. $\dagger$: eight-frame inputs (\cref{sec:ablation}).}
   \label{tab:material}
   \resizebox{\linewidth}{!}{%
   \begin{tabular}{@{}lccc@{}}
@@ -35,6 +28,7 @@ AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupA
     supervised CNN (3 seeds) & \af{\SupFoneRawSAcc}{\SupFoneRawSF} & \af{\SupFonePrevSAcc}{\SupFonePrevSF} & \SupFoneRawSTop\pct \\
     \ \ + state swap & \af{\SupSwapFoneRawAcc}{\SupSwapFoneRawF} & \af{\SupSwapFonePrevSAcc}{\SupSwapFonePrevSF} & \SupSwapFoneRawTop\pct \\
     \ \ + photometric jitter (3 seeds) & \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF} & \textbf{\af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}} & \SupAugFoneRawSTop\pct \\
+    \ \ + session-adversarial (DANN) & \af{\DannFoneRawAcc}{\DannFoneRawF} & \af{\DannFonePrevAcc}{\DannFonePrevF} & \DannFoneRawTop\pct \\
     TactSpace replica$^\dagger$ (2 seeds) & \TactSpaceRawAcc & -- & \TactSpaceRawTop\pct \\
     normal-map alignment$^\dagger$ & \af{\NmRawAcc}{\NmRawF} & -- & \NmRawTop\pct \\
     Sparsh-DINO, frozen & \af{\SdinoRawAcc}{\SdinoRawF} & \af{\SdinoPrevAcc}{\SdinoPrevF} & \SdinoRawTop\pct \\
@@ -45,21 +39,77 @@ AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupA
     \multicolumn{4}{@{}l}{\emph{without labels}} \\
     state swap, from scratch (3 seeds) & \af{\SwapFoneRawSAcc}{\SwapFoneRawSF} & -- & \SwapFoneRawSTop\pct \\
     Sparsh-I-JEPA + adapter (3 seeds) & \af{\IjepaAdAcc}{\IjepaAdF} & \af{\IjepaAdPrevAcc}{\IjepaAdPrevF} & \IjepaAdTop\pct \\
+    \ \ with jitter positives instead & \af{\IjepaAdJitterAcc}{\IjepaAdJitterF} & \af{\IjepaAdJitterPrevAcc}{\IjepaAdJitterPrevF} & \IjepaAdJitterTop\pct \\
     Sparsh-MAE + adapter & \af{\MaeAdAcc}{\MaeAdF} & -- & \MaeAdTop\pct \\
     Sparsh-DINO + adapter & \af{\SdinoAdAcc}{\SdinoAdF} & -- & \SdinoAdTop\pct \\
     \bottomrule
   \end{tabular}}
 \end{table}
 
-\paragraph{Time gap.}
-\Cref{fig:timegap} isolates the gap (eight-frame inputs): trained on June alone, the same 15 materials are recognised at \GapSupBRawAcc\pct\ two to three weeks later and \GapSupDRawAcc\pct\ three to four months later; calibration recovers \num{12}--\num{14} points at both gaps, and the adapter on frozen Sparsh adds \num{6}--\num{8} points over the frozen encoder at both.
+\paragraph{Which estimate of the state.}
+\Cref{tab:sources} varies only the test-time estimate $\hat F$ for the trained single-frame CNNs. Any contacts of the current deployment serve: a random other session of the test campaign works as well as the previous one, and the mean field of all its sessions---twenty different objects whose imprints average out---is the best estimate (\SrcSupCampAcc\pct). The session's own contacts are the worst contact-based estimate (\SrcSupOwnAcc), because they contain the object. The bare gel works too (\SrcSupBlankAcc): standard flat-fielding is a valid estimate of the state where blank frames exist; the contact stream gives an equivalent one where they do not, which is the case for every archive and for our training campaigns. The spatially varying low-frequency field does most of the work (\SrcSupLowpassAcc); a single colour per session (\SrcSupMeancolAcc) or re-centring in feature space (\SrcSupFeatAcc) do not. The fine-scale part of the field adds the rest.
+
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{4pt}
+  \caption{\textbf{Test-time estimate of the state} (supervised single-frame CNN, with and without photometric jitter; accuracy\,/\,macro-F1 on campaign D). Every estimate comes from unlabelled frames of the deployment.}
+  \label{tab:sources}
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    estimate of $\hat F$ & CNN & CNN + jitter \\
+    \midrule
+    none & \af{\SrcSupNoneAcc}{\SrcSupNoneF} & \af{\SrcAugNoneAcc}{\SrcAugNoneF} \\
+    feature-space mean of the previous session & \af{\SrcSupFeatAcc}{\SrcSupFeatF} & \af{\SrcAugFeatAcc}{\SrcAugFeatF} \\
+    mean colour of the previous session & \af{\SrcSupMeancolAcc}{\SrcSupMeancolF} & \af{\SrcAugMeancolAcc}{\SrcAugMeancolF} \\
+    low-pass field of the previous session & \af{\SrcSupLowpassAcc}{\SrcSupLowpassF} & \af{\SrcAugLowpassAcc}{\SrcAugLowpassF} \\
+    own session's other contacts & \af{\SrcSupOwnAcc}{\SrcSupOwnF} & \af{\SrcAugOwnAcc}{\SrcAugOwnF} \\
+    previous session's contacts & \af{\SrcSupPrevAcc}{\SrcSupPrevF} & \af{\SrcAugPrevAcc}{\SrcAugPrevF} \\
+    a random other session's contacts & \af{\SrcSupRandAcc}{\SrcSupRandF} & \af{\SrcAugRandAcc}{\SrcAugRandF} \\
+    the session's bare gel & \af{\SrcSupBlankAcc}{\SrcSupBlankF} & \af{\SrcAugBlankAcc}{\SrcAugBlankF} \\
+    all sessions of the campaign & \textbf{\af{\SrcSupCampAcc}{\SrcSupCampF}} & \af{\SrcAugCampAcc}{\SrcAugCampF} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Photometric jitter.} Standard photometric augmentation (per-channel gain $\pm$20\pct\ and a smooth multiplicative field $\pm$15\pct) is, with single-frame inputs, a strong baseline on its own: \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF}\ raw (three seeds, $\pm$\SupAugFoneRawSAccSd) and \af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}\ with the previous session's state---the best deployable pipeline when labels are available. It is a regulariser against the state rather than a better representation: on the within-campaign split of \cref{sec:timeorstate}, where the state does not change, it adds \num{3} points instead of \num{28}, and on eight-frame inputs, where the fine-scale state is easier to learn, it gives only \SupAugRawSAcc\ raw (\cref{sec:ablation}).
+
+\paragraph{Without labels.} The label-free state-swap adapter needs neither labels nor test-time data: it lifts frozen Sparsh-I-JEPA to \af{\IjepaAdAcc}{\IjepaAdF}\ (three seeds, $\pm$\IjepaAdAccSd; $+$\num{24.0} $[+13.9, +35.9]$), Sparsh-MAE to \MaeAdAcc\ and Sparsh-DINO to \SdinoAdAcc, with the era probe falling from \num{77}--\num{79} to \num{66}--\num{69}. The state swap is what gives the gain: the same adapter trained with photometric-jitter positives instead reaches \IjepaAdJitterAcc\pct. On the general-vision DINOv2~\cite{oquab2024dinov2} the adapter adds only \num{3.8} $[-4.3,+11.5]$: the objective reorganises what tactile pretraining already holds. Trained from scratch, the objective is a weak representation on its own (\af{\SwapFoneRawSAcc}{\SwapFoneRawSF}, three seeds; \HoldSwapRawAcc\pct\ even within a campaign): its value is on top of a pretrained encoder. It is the best option without labels; with labels, jitter and calibration do better.
+
+\paragraph{Adaptation baselines.}
+AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupFoneAdaAcc\pct\ for the single-frame supervised CNN, close to calibration on this split---but it pools 20 objects into one statistic, and \cref{sec:timeorstate} shows that it is not safe. Re-estimated per session, which is what a robot has, it gives \SupFoneAdaSessAcc\pct\ for the supervised CNN and 3--9\pct\ for every other model: with one object per session the statistics absorb the object. A session-adversarial head (DANN~\cite{ganin2016dann}, gradient reversal on the session identity) changes nothing (\cref{tab:material}): session identity is not what the encoder uses, the state is.
+
+\paragraph{With a few target labels.}
+Calibration stacks with labels. Adding 1\pct\ of the test campaign's episodes to the head's training set gives \SupFoneRawFSOne\pct\ raw and \SupFonePrevFSOne\pct\ calibrated; 5\pct: \SupFoneRawFSFive\ and \SupFonePrevFSFive; 10\pct: \SupFoneRawFSTen\ and \SupFonePrevFSTen. Two of the twenty materials were replaced by new pieces of the same kind before campaign D (textured rubber, EPDM foam); excluding them, the raw jitter CNN scores \SupAugFoneRawEighteen\pct\ (18-way).
+
+\subsection{Time or state?}
+\label{sec:timeorstate}
+
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{3pt}
+  \caption{\textbf{Within the campaign, nothing breaks.} Train on A+C, test on B (July 6--8, 15 materials, chance 6.7\pct; sessions never seen, weeks after A and days before C): accuracy\,/\,macro-F1. Prev.: previous session's state; AdaBN over the test campaign\,/\,per session.}
+  \label{tab:holdout}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    & raw & + prev. & AdaBN & AdaBN/session \\
+    \midrule
+    supervised CNN & \af{\HoldSupRawAcc}{\HoldSupRawF} & \af{\HoldSupPrevAcc}{\HoldSupPrevF} & \HoldSupAdaAcc & \HoldSupAdaSessAcc \\
+    \ \ + photometric jitter & \af{\HoldAugRawAcc}{\HoldAugRawF} & \af{\HoldAugPrevAcc}{\HoldAugPrevF} & \HoldAugAdaAcc & \HoldAugAdaSessAcc \\
+    \ \ eight-frame inputs & \af{\HoldFeightRawAcc}{\HoldFeightRawF} & \af{\HoldFeightPrevAcc}{\HoldFeightPrevF} & \HoldFeightAdaAcc & \HoldFeightAdaSessAcc \\
+    state swap, from scratch & \af{\HoldSwapRawAcc}{\HoldSwapRawF} & \af{\HoldSwapPrevAcc}{\HoldSwapPrevF} & \HoldSwapAdaAcc & \HoldSwapAdaSessAcc \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+If the failure were a matter of elapsed time, a model should degrade on any later session. It does not. Trained on campaigns A and C and tested on B---sessions it never saw, recorded weeks after A, under the same rig state---the raw supervised CNN scores \HoldSupRawAcc\pct\ (\cref{tab:holdout}), against \SupFoneRawSAcc\pct\ across the campaign break. The same test separates the methods. Calibration is safe: it adds \num{5} points where the state has not changed and \num{34} where it has, and reaches most of the within-campaign level (\SupFonePrevSAcc--\SrcSupCampAcc\ vs \HoldSupPrevAcc\pct). AdaBN is not: re-estimated over a campaign whose state did not change it \emph{costs} \num{7}--\num{16} points, and per session it collapses on both splits. Jitter adds \num{3} points here and \num{28} across the break. Eight-frame integration hurts even within the campaign (\HoldFeightRawAcc\ vs \HoldSupRawAcc): what it exposes is the session-level part of the state (own session \SigCOwn\ vs other sessions of the campaign \SigSameEraOtherDay\ in \cref{fig:signature}), which every new session changes.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\linewidth]{fig/fig_time_gap.pdf}
-  \caption{\textbf{The longer in use, the worse.} Same 15 materials, trained on June only, supervised CNN (eight-frame inputs), with and without stream calibration.}
+  \caption{\textbf{Weeks within a campaign vs.\ months across the break.} Same 15 materials, trained on June only (supervised CNN, eight-frame inputs), tested two to three weeks later in the same campaign and three to four months later in the next, with and without stream calibration.}
   \label{fig:timegap}
 \end{figure}
+
+\Cref{fig:timegap} shows the same with one training set: trained on June alone, the same 15 materials are recognised at \GapSupBRawAcc\pct\ two to three weeks later and \GapSupDRawAcc\pct\ after the break; calibration recovers \num{12}--\num{14} points at both gaps, and the adapter on frozen Sparsh adds \num{6}--\num{8} points over the frozen encoder at both.
 
 \subsection{Normal force: geometry survives, appearance does not}
 \label{sec:force}
@@ -67,15 +117,15 @@ AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupA
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig/fig_force.pdf}
-  \caption{\textbf{Force across days needs geometry against the unloaded gel.} $R^2$ of log normal force on later days.}
+  \caption{\textbf{Force across campaigns needs geometry against the unloaded gel.} $R^2$ of log normal force on the later campaign.}
   \label{fig:force}
 \end{figure}
 
-Normal force cannot be read from appearance across days: whole-frame representations trained on native frames---label-free, supervised, and with the force signal in the objective---reach $R^2\le\ForceLearnedBestR$ on the later campaign, and model-free deformation statistics against a fresh bare-gel frame reach \num{0.22}. Marker spreading against the bare-gel marker grid does transfer (\cref{fig:force}): within a session the affine divergence tracks the Nano17 force at Spearman \ForceWithinRho; a linear map of three affine statistics fitted on the first 13 sessions of campaign D predicts the last 7 at $R^2$ \ForceGeomFreshR\ ($r$ \ForceGeomFreshC) with a fresh grid and \ForceGeomPrevR\ ($r$ \ForceGeomPrevC) with the previous session's grid; fitted on June--July with a single bare-gel grid borrowed from September, it predicts September--October at $R^2$ \ForceGeomXeraR\ ($r$ \ForceGeomXeraC). A new gel keeps the force ranking ($r\approx0.70$) but changes the force-to-displacement scale: a gel replacement changes mechanics as well as rendering, and absolute force needs one scale calibration per gel.
+Normal force cannot be read from appearance across campaigns: whole-frame representations trained on native frames---label-free, supervised, and with the force signal in the objective---reach $R^2\le\ForceLearnedBestR$ on the later campaign, and model-free deformation statistics against a fresh bare-gel frame reach \num{0.22}. Marker spreading against the bare-gel marker grid does transfer (\cref{fig:force}): within a session the affine divergence tracks the Nano17 force at Spearman \ForceWithinRho; a linear map of three affine statistics fitted on the first 13 sessions of campaign D predicts the last 7 at $R^2$ \ForceGeomFreshR\ ($r$ \ForceGeomFreshC) with a fresh grid and \ForceGeomPrevR\ ($r$ \ForceGeomPrevC) with the previous session's grid; fitted on June--July with a single bare-gel grid borrowed from September, it predicts September--October at $R^2$ \ForceGeomXeraR\ ($r$ \ForceGeomXeraC). A new gel keeps the force ranking ($r\approx0.70$) but changes the force-to-displacement scale: a gel replacement changes mechanics as well as rendering, and absolute force needs one scale calibration per gel.
 
 \subsection{Contact}
 \label{sec:contact}
-Contact detectors trained on frozen whole-frame features on the seven lead-in sessions detect contact in the other sessions at $\ge$98\pct\ recall but reject \ContactRawSpec\pct\ of those sessions' bare-gel frames: another day's unloaded gel looks like contact. Referencing the embedding to the session's own bare gel restores \ContactRefSpec\pct\ specificity at \ContactRefRecall\pct\ recall (differencing the raw frame against the blank: \ContactBlankdiffSpec\pct). The unloaded state is the reference for contact as for force.
+Contact detectors trained on frozen whole-frame features on the seven lead-in sessions detect contact in the other sessions at $\ge$98\pct\ recall but reject \ContactRawSpec\pct\ of those sessions' bare-gel frames: another session's unloaded gel looks like contact. Referencing the embedding to the session's own bare gel restores \ContactRefSpec\pct\ specificity at \ContactRefRecall\pct\ recall (differencing the raw frame against the blank: \ContactBlankdiffSpec\pct). The unloaded state is the reference for contact as for force.
 
 \subsection{Second unit}
 \label{sec:second}
@@ -83,6 +133,6 @@ On Real Tactile MNIST (digit from single touches, 10-way, two events: later days
 
 \subsection{Ablations}
 \label{sec:ablation}
-\paragraph{Frames integrated.} The imprint is static during a stroke, so consecutive native frames can be averaged; this raises the reliability of fine texture but lowers cross-day accuracy. With the supervised CNN and previous-session calibration: one frame \SupFonePrevSAcc\pct\ $\rightarrow$ two \SupFtwoPrevAcc\ $\rightarrow$ four \SupFfourPrevAcc\ $\rightarrow$ eight \SupPrevAcc; with jitter, raw \SupAugFoneRawSAcc\ (one) vs \SupAugRawSAcc\ (eight). Integration makes the stable fine-scale content---the day signature---easier to learn; raw accuracy without jitter is flat. The label-free objective is insensitive to it (\SwapFoneRawSAcc\ vs \SwapRawAcc).
-\paragraph{Resolution.} Area-downscaling the native crops twofold does not reduce cross-day material accuracy (single frame, calibrated: \SupFoneScHalfPrevSAcc\ vs \SupFonePrevSAcc\ native; eight frames: \SupScHalfOwnAcc\ vs \SupOwnAcc); fourfold costs \num{1.5}--\num{3} points (\SupFoneScQuarterPrevSAcc; \SupScQuarterOwnAcc). The material cue that survives days lives above $\sim$45\,\si{\micro\metre}; the finest band is unreliable in one frame (0.14) and mostly signature when integrated.
+\paragraph{Frames integrated.} The imprint is static during a stroke, so consecutive native frames can be averaged; this raises the reliability of fine texture but lowers accuracy on new sessions. With the supervised CNN and previous-session calibration: one frame \SupFonePrevSAcc\pct\ $\rightarrow$ two \SupFtwoPrevAcc\ $\rightarrow$ four \SupFfourPrevAcc\ $\rightarrow$ eight \SupPrevAcc; with jitter, raw \SupAugFoneRawSAcc\ (one) vs \SupAugRawSAcc\ (eight); within the campaign, \HoldSupRawAcc\ (one) vs \HoldFeightRawAcc\ (eight). The label-free objective is insensitive to it (\SwapFoneRawSAcc\ vs \SwapRawAcc). Adding single-frame-level pixel noise to the eight-frame means at training and test time does not recover the single-frame result (\NoiseFeightPrevAcc\ vs \SupPrevAcc\ with eight frames and \SupFonePrevSAcc\ with one): the advantage is not a noise-regularisation effect, and we report it as a finding.
+\paragraph{Resolution.} Area-downscaling the native crops twofold does not reduce cross-campaign material accuracy (single frame, calibrated: \SupFoneScHalfPrevSAcc\ vs \SupFonePrevRawHeadAcc\ native under the same heads; eight frames: \SupScHalfOwnAcc\ vs \SupOwnAcc); fourfold costs \num{1.5}--\num{3} points (\SupFoneScQuarterPrevSAcc; \SupScQuarterOwnAcc). The material cue that survives the state change lives above $\sim$45\,\si{\micro\metre}; the finest band is unreliable in one frame (0.14) and mostly state when integrated.
 \paragraph{Decoys.} Removing the position-matched decoy negatives from the adapter objective costs \num{3.1} points $[+0.5,+6.1]$ (\IjepaAdNoDecoyAcc\ vs \IjepaAdAcc).
