@@ -1,4 +1,9 @@
-# CVPR 2027 — results sheet (native protocol; status 2026-10-23 03:30)
+# CVPR 2027 — results sheet (native protocol; status 2026-10-25 05:00)
+
+**Paper protocol since 2026-10-25: single native frames; heads trained on embeddings calibrated with
+their own previous session whenever the test embeddings are calibrated (consistent protocol,
+`tacrep_calib_eval.py --train-prev`); raw rows = raw at both ends. The 8-frame numbers in T1 are kept
+for the frame ablation only. T6 holds the reviewer controls and the hold-out.**
 
 Every number below is from the final protocol (native 192-px crop-tubes with 8-frame
 integration for material; whole native frames for force and contact). Raw runs and the full
@@ -53,19 +58,21 @@ intervals of single numbers are wide (e.g. adapter 35.2 [22.5, 48.8], supervised
 |---|---|---|---|---|
 | raw | 17.3 / 11.1 | 15.2 / 8.5 | 14.0 / 8.1 | 15.7 / 9.0 |
 | + previous-session calibration | **50.8 / 45.9** | 43.9 / 39.0 | 37.8 / 32.8 | 35.8 / 31.3 |
-Single-frame protocol (A+B+C → D; raw / previous-session calibration):
-| model (1 native frame) | raw | + prev.-session calibration |
-|---|---|---|
-| supervised (3 seeds) | 16.6 ± 0.8 / 10.5 | **51.0 ± 0.5 / 46.0** |
-| supervised + state swap | 28.4 / 22.1 | 52.4 / 46.5 |
-| supervised + photometric jitter (3 seeds) | **43.9 ± 2.3 / 40.3** | **53.9 ± 0.9 / 48.3** |
-| supervised + jitter + state swap | 44.1 / 39.2 | 54.6 / 48.0 |
-| label-free decoy swap (3 seeds) | 26.5 ± 1.6 / 23.6 | 31.0 / 27.8 (seed 0) |
-| (jitter with 8-frame inputs, 2 seeds) | 22.8 / 17.7 | 40.5 / 35.5 |
-Integration amplifies the stable fine-scale content = mostly the day signature. With single frames,
-standard photometric jitter alone removes most of the collapse (45 raw; 24 with 8-frame inputs);
-jitter + calibration is the best deployable pipeline with labels. The public-encoder and adapter
-rows (T1) are single-frame already; the adapter (34.9) remains the best option without labels.
+Single-frame protocol (A+B+C → D; raw / previous-session calibration; consistent head protocol):
+| model (1 native frame) | raw (3 seeds where stated) | + prev.-session calibration | + campaign-mean state |
+|---|---|---|---|
+| supervised (3 seeds raw; calibration seed 0, seeds pending) | 16.6 ± 0.8 / 10.5 | **51.2 / 46.3** | **57.1 / 50.6** |
+| supervised + state swap | 28.4 / 22.1 | 52.4 / 46.5 (raw-head protocol) | — |
+| supervised + photometric jitter (3 seeds raw) | **43.9 ± 2.3 / 40.3** | **55.6 / 51.4** | 52.0 / 45.1 |
+| supervised + jitter + state swap | 44.1 / 39.2 | 54.6 / 48.0 (raw-head protocol) | — |
+| supervised + DANN (session GRL) | 18.3 / 11.7 | 52.9 / 48.0 | — |
+| label-free decoy swap (3 seeds) | 26.5 ± 1.6 / 23.6 | 31.0 / 27.8 (seed 0) | — |
+| (jitter with 8-frame inputs, 2 seeds) | 22.8 / 17.7 | 40.7 / 35.9 | — |
+Single frames beat integrated frames on every new session, within or across campaigns (T6); white
+pixel noise added to 8-frame means does NOT reproduce it (T6). With single frames, standard
+photometric jitter alone removes most of the collapse (44 raw; 23 with 8-frame inputs) but is a
+cross-state regulariser (+3 within the campaign, +27 across); jitter + calibration is the best
+deployable pipeline with labels; the adapter (34.9) remains the best option without labels.
 Resolution (single frame, supervised, raw / prev.-cal.): native 16.6 / 51.0 ± 0.5; 1/2 21.5 / 52.9;
 1/4 23.1 / 49.6 — native resolution gives no measurable advantage for material across days.
 
@@ -120,12 +127,52 @@ classified as July: real June 5.9 % · June re-rendered with another June state 
 re-rendered with a July state 35.3 %** · real July 52.4 % (crops; episodes 0 / 0 / 19.3 / 53.1).
 
 ## T5. Measurements (model-free)
-- Day signature (55 sessions; 190–370 µm band; markers masked): a contact matches the position-wise
-  mean of its own session's other contacts at r 0.53, of a different object the same day 0.41, of
-  another era 0.15, of the other gel 0.16. Rigid samples 0.62 same day (no backing print-through);
-  broadband (codec rows ≈ 3 % of power); absent from blanks (r 0.06).
+- CAMPAIGN signature (55 sessions; 190–370 µm band; markers masked; all partner pairs): a contact
+  matches the position-wise mean of its own session's other contacts at r 0.53, of a different object
+  the same day 0.41, of another day of the SAME campaign 0.38, of another campaign 0.18, of the other
+  gel 0.16 → a campaign-level (weeks) rendering state. PRESENT IN THE BARE GEL: bare-gel frames vs the
+  session's contact field 0.63 (crop level; the earlier "absent, r 0.06" was a broken whole-frame
+  comparison — retracted). Fixed in image coordinates: warping the bare gel by the membrane
+  displacement lowers its match to the field (0.60; > 8 px: 0.59 → 0.34) but raises its match to the
+  same episode's contact frame (0.18 → 0.40) → imaging-chain state, not membrane, not fixture
+  print-through (shared most by soft thick samples, 0.54; rigid 0.33 on the training gel).
 - Second sensor (Real Tactile MNIST, GelSight Mini, 24 runs / 15 days / 2 gels, public): own run
   0.41, other run same day 0.39, other day 0.34, other gel 0.19 (170–410 µm).
 - Temporal integration (34–100 µm reliability): 1 frame 0.14 → 4 frames 0.32 → 8 frames ~0.48.
 - Drift of the unloaded gel (620 blanks, 44 sessions): use 0.13 per 5 contacts, power-up step 0.40,
   no drift on the second gel; gel replacement: pattern correlation 0.67 and a new force scale.
+
+
+## T6. Reviewer controls and the hold-out (2026-10-25; single frame; consistent protocol unless stated)
+### Which estimate of the state (test-time; supervised / supervised + jitter; acc / F1 on D)
+| estimate | sup | sup + jitter |
+|---|---|---|
+| none | 17.3 / 11.1 | 45.2 / 41.6 |
+| feature-space mean of the previous session | 28.8 / 22.5 | 28.2 / 21.5 |
+| mean colour of the previous session | 32.7 / 26.2 | 46.7 / 42.6 |
+| low-pass field of the previous session | 49.7 / 43.5 | 49.6 / 44.3 |
+| own session's other contacts (LOO) | 44.7 / 39.6 | 50.6 / 42.4 |
+| previous session's contacts | 50.9 / 46.0 | 54.4 / 48.7 |
+| a random other test-campaign session | 49.4 / 43.2 | 51.2 / 44.8 |
+| the session's bare gel (+ campaign offset) | 49.9 / 43.6 | 53.2 / 47.3 |
+| **mean of all 20 test-campaign sessions** | **57.1 / 50.6** | 52.0 / 45.1 |
+(raw-head protocol file `state_ablation2.json`; the consistent-protocol rerun `state_ablation_cons.json`
+replaces it in the paper when it lands.)
+### Within-campaign hold-out, A+C → B (15 materials, chance 6.7; raw / +prev / AdaBN whole / AdaBN per session)
+| model | raw | + prev | AdaBN | AdaBN/session |
+|---|---|---|---|---|
+| supervised | 54.4 / 55.7 | 59.2 / 61.5 | 47.5 | 2.6 |
+| + jitter | 57.9 / 57.7 | 61.3 / 61.5 | 42.2 | 3.4 |
+| 8-frame inputs | 39.0 / 37.6 | 37.9 / 41.8 | 40.4 | 2.1 |
+| label-free swap, from scratch | 27.0 / 31.5 | 20.9 / 26.0 | 1.6 | 0.0 |
+Across the break (ABC → D) the same models: 17.3 → 51.2 (57.1 campaign mean); jitter 45.2 → 55.6;
+AdaBN 49.1 / 40.4; per session 6.2 / 6.5. Time is not the cause; the state change is. Calibration is
+safe (+5 within, +34 across); AdaBN is not (−7 to −16 within).
+### Other controls
+- DANN (session-adversarial) 52.9 prev vs plain 51.2 → no gain.
+- Noise control: 8-frame means + single-frame-level noise at train and test: 34.0 prev (8 frames
+  35.8; 1 frame 51.2) → the single-frame advantage is not a noise-regularisation effect.
+- Adapter positives: state swap 34.9 vs photometric jitter 23.4 (zero-shot) → the swap is the gain.
+- Few-shot (target-campaign labels in the head; sup, 1 frame): 1 % raw 36.8 → calibrated 55.5;
+  5 % 58.8 → 68.9; 10 % 70.1 → 76.5. Calibration stacks with labels.
+- 18-way (replaced pieces Textured_Rubber / EPDM_Foam excluded): raw jitter CNN 46.1.
