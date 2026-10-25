@@ -105,11 +105,11 @@ If the failure were a matter of elapsed time, a model should degrade on any late
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\linewidth]{fig/fig_time_gap.pdf}
-  \caption{\textbf{Weeks within a campaign vs.\ months across the break.} Same 15 materials, trained on June only (supervised CNN, eight-frame inputs), tested two to three weeks later in the same campaign and three to four months later in the next, with and without stream calibration.}
+  \caption{\textbf{Weeks within a campaign vs.\ months across the break.} Same 15 materials, trained on June only (supervised CNN, single frames), tested two to three weeks later in the same campaign and three to four months later in the next, raw and with the previous session's state subtracted.}
   \label{fig:timegap}
 \end{figure}
 
-\Cref{fig:timegap} shows the same with one training set: trained on June alone, the same 15 materials are recognised at \GapSupBRawAcc\pct\ two to three weeks later and \GapSupDRawAcc\pct\ after the break; calibration recovers \num{12}--\num{14} points at both gaps, and the adapter on frozen Sparsh adds \num{6}--\num{8} points over the frozen encoder at both.
+\Cref{fig:timegap} shows the same with one training set. Trained on June alone, the same 15 materials are recognised at \GapFoneSupBRawAcc\pct\ two to three weeks later and \GapFoneSupDRawAcc\pct\ after the break. This training set holds every material in a single session, and it behaves differently from the three-campaign one: raw, it does not collapse after the break (\GapFoneSupDRawTop\pct\ of episodes in one class, against \SupFoneRawSTop\pct), and calibration adds \num{12} points within the campaign but nothing across it (\GapFoneSupDPrevAcc\pct). The three-campaign model collapses because five of its materials were recorded in one session each, after the other fifteen: a classifier can tell those five apart by their session's state alone, and under a new state everything looks like them (cork and fibreglass absorb \SupFoneRawSTop\pct\ of the later campaign). Subtracting the state undoes exactly that. The large calibration gains in \cref{tab:material} are gains against this collapse; a representation that has not collapsed keeps \num{37}--\num{43}\pct\ with or without it. Whole-campaign AdaBN, in contrast, moves by $+$\num{9} to $-$\num{9} points across these splits with no pattern.
 
 \subsection{Normal force: geometry survives, appearance does not}
 \label{sec:force}

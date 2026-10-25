@@ -76,17 +76,17 @@ deployable pipeline with labels; the adapter (34.9) remains the best option with
 Resolution (single frame, supervised, raw / prev.-cal.): native 16.6 / 51.0 ± 0.5; 1/2 21.5 / 52.9;
 1/4 23.1 / 49.6 — native resolution gives no measurable advantage for material across days.
 
-## T2. Time gap, same 15 materials, trained on June (era A) only (15-way)
-| model | → July (2–3 weeks) raw / calibrated | → Sep–Oct (3–4 months, same gel) raw / calibrated |
+## T2. Time gap, same 15 materials, trained on June (campaign A) only (15-way; single frame, 2026-10-25)
+| model | → July (2–3 weeks, same campaign) raw / own-cal / prev | → Sep–Oct (3–4 months, next campaign) raw / own-cal / prev |
 |---|---|---|
-| supervised | 45.3 / **59.3** | 23.5 / **35.2** |
-| label-free swap | 46.6 (F1 46.5) / 39.0 | 24.3 / 23.7 |
-| frozen Sparsh-I-JEPA | 42.9 (F1 36.1) / — | 22.8 (F1 17.9) / — |
-| **frozen Sparsh-I-JEPA + label-free swap adapter** | **49.2 (F1 46.5)** / 47.6 | **31.0 (F1 24.9)** / 26.4 |
-Realistic calibration sources (supervised, A+B+C → D): previous session 35.8; when it was the same
-day 40.4 (11 sessions) vs another day 30.1 (9); online (previous state updated per contact) 33.0,
-helps from the first contact; own session's past contacts only: needs ~10–20 contacts.
-
+| supervised, 1 frame | 68.4 / 69.9 / **80.6** | 39.1 / 43.5 / 37.3 (online 41.7) |
+| supervised + jitter, 1 frame | 71.0 / 70.4 / 73.3 | 43.4 / 42.4 / 42.5 |
+| (eight-frame, old) supervised | 45.3 / 59.3 / — | 23.5 / 35.2 / — |
+| (eight-frame, old) frozen Sparsh-I-JEPA → + swap adapter | 42.9 → 49.2 | 22.8 → 31.0 |
+The one-session-per-material training set does NOT collapse across the break (18 % in one class vs
+43 % for A+B+C) and calibration does not lift it there (39 → 37–43); within the campaign +12. AdaBN
+(whole era) +9 on B, −9 on D. Realistic calibration sources for the A+B+C model (single frame, consistent):
+previous session 50.5 ± 0.7 (3 seeds); online 46.6; own session 47.7; bare gel 56.1; campaign mean 54.9.
 ## T3. Normal force (Nano17), log fn
 | input | split | R² | r |
 |---|---|---|---|
