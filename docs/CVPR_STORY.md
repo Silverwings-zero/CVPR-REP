@@ -143,3 +143,12 @@ from marker spreading transfers across months (r 0.72), and contact detection re
   calibration does not lift it. A+B → D / A+C → D decide whether the 17 → 51 gain needs that group.
   The paper must state the mechanism; the story holds (state factoring, safe calibration, physics),
   but "calibration lifts every training set" cannot be claimed.
+
+## Resolution of the open item (2026-10-25 07:15)
+The collapse target is the campaign-C group (classes a session's state identifies); D's illumination
+state is nearest to C's. Without C: raw 37–39, calibration +6–13 (plain), 0 (jitter); on the shared 13
+materials jitter alone holds the within-campaign raw level (70 vs 71). PAPER NOW SAYS: state subtraction
+undoes the collapse that session-identifiable classes invite (the default in tactile datasets); for a
+balanced set photometric jitter absorbs the state change and the estimate adds 9–17 to a plain CNN.
+Story implication: the physics + benchmark + collapse mechanism + safe calibration + unloaded-state
+force/contact are the paper; "a representation that recovers everything" is not claimable.

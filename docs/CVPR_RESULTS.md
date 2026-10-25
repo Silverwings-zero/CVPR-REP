@@ -169,6 +169,18 @@ feature-space centring fails; low-pass ≈ full for the plain CNN, full +4 for t
 Across the break (ABC → D) the same models: 17.3 → 51.2 (57.1 campaign mean); jitter 45.2 → 55.6;
 AdaBN 49.1 / 40.4; per session 6.2 / 6.5. Time is not the cause; the state change is. Calibration is
 safe (+5 within, +34 across); AdaBN is not (−7 to −16 within).
+### Training-set structure (single frame; raw heads / consistent prev; 2026-10-25 07:00)
+| train → D | raw | own-cal | prev | AdaBN | per-sess | collapse |
+|---|---|---|---|---|---|---|
+| A+C (one session per material, C present) | **13.2** | 34.5 | 37.7 | 35.3 | 4.8 | 41 % (onto C) |
+| A+B (two sessions per material, no C) | 36.8 | 50.2 | 42.7 | 32.0 | 6.3 | 26 % |
+| A+B + jitter | 46.8 | 47.4 | 46.5 | 37.0 | 5.6 | 19 % |
+| A only | 39.1 | 43.5 | 37.3 | 30.2 | 6.7 | 18 % |
+| A+B+C | 17.3 | 44.6 | 50.5 | 49.1 | 6.2 | 43 % (onto C) |
+Collapse target = the C materials (D's low-pass state is 1.6 grey levels from C's mean field, 3.5 / 5.4
+from A's / B's). On the 13 shared non-replaced materials: A→B 71 raw / 86 prev; A+B→D 56 / 65 (own 73),
+jitter 70 raw / 68; A+B+C→D 9.7 / 60 (blank 64). → state subtraction undoes the collapse; for a
+balanced set jitter suffices and calibration adds 9–17 to a plain CNN.
 ### Other controls
 - DANN (session-adversarial) 52.9 prev vs plain 51.2 → no gain.
 - Noise control: 8-frame means + single-frame-level noise at train and test: 34.0 prev (8 frames
