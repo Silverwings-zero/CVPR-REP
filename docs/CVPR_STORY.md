@@ -164,3 +164,5 @@ trained with one object per session learn the hardware state as a class feature 
 cross-unit 8 % → 52–62 % with the estimate; 5 rigid materials cross-gel 44 % → no gain); months-later
 claim holds for the state, not for a classifier (no material was recorded on the same hardware months
 apart). Title "Stateful Touch" still fits.
+
+Sep 22 Canvas: explained — canvas's weave occupies the fine band on every hardware (June/July canvas sessions behave the same); no hardware event.
