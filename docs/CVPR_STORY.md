@@ -152,3 +152,15 @@ undoes the collapse that session-identifiable classes invite (the default in tac
 balanced set photometric jitter absorbs the state change and the estimate adds 9–17 to a plain CNN.
 Story implication: the physics + benchmark + collapse mechanism + safe calibration + unloaded-state
 force/contact are the paper; "a representation that recovers everything" is not claimable.
+
+## 2026-10-26: hardware timeline — the paper's physics corrected
+From the images (fine-pattern blocks, illumination fields, confirmed by the user): S1 = unit 1 + gel 1
+(Jun 15 – Jul 9), S2 = unit 2 + gel 2 (Jul 10 – Oct 9 18:42), S3 = unit 2 + gel 3 (Oct 9 19:37 on). The
+log's "four gel replacements" were two hardware changes. Signature by hardware relation: own 0.53, other
+object same day 0.40, same unit+gel weeks 0.39, same unit+gel months (~1,300 grasps) 0.32, other unit
+0.15, other gel 0.16. Story now: a frame carries the rendering state of its unit+gel; the state does not
+drift with use; it changes only with hardware; a dataset's images record its hardware history; classifiers
+trained with one object per session learn the hardware state as a class feature (main split: 15 materials
+cross-unit 8 % → 52–62 % with the estimate; 5 rigid materials cross-gel 44 % → no gain); months-later
+claim holds for the state, not for a classifier (no material was recorded on the same hardware months
+apart). Title "Stateful Touch" still fits.

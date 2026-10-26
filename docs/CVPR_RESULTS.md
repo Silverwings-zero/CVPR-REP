@@ -1,4 +1,12 @@
-# CVPR 2027 — results sheet (native protocol; status 2026-10-25 05:00)
+# CVPR 2027 — results sheet (native protocol; status 2026-10-26)
+
+**HARDWARE TIMELINE (confirmed 2026-10-26): S1 = unit 1 + gel 1 (Jun 15 – Jul 9: A, B, Wood); S2 = unit 2 +
+gel 2 (Jul 10 – Oct 9 18:42: Cork/FiberGlass/ABS/Ceramic in July; the 15 A/B materials + Canvas in Sep–Oct);
+S3 = unit 2 + gel 3 (Oct 9 19:37 on: the five rigid materials). "Campaign D" = S2 (15 materials, cross-unit
+from S1) + S3 (5 rigid materials, cross-gel from S2). Fold D by hardware (sup raw/prev/blank): 15 cross-unit
+8.4 / 52.0 / 61.6; 5 cross-gel 43.8 / 48.9 / 39.4; jitter 49.1 / 62.9 vs 33.7 / 33.8; Sparsh 5.0 / 39.4 /
+adapter 36.6 vs 30.0 / 23.6 / 31.3. Signature by hardware relation: own 0.53, same day 0.40, same hw weeks
+0.39, same hw months 0.32, other unit 0.15, other gel 0.16 (`signature_hardware.json`).**
 
 **Paper protocol since 2026-10-25: single native frames; heads trained on embeddings calibrated with
 their own previous session whenever the test embeddings are calibrated (consistent protocol,
