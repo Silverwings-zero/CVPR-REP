@@ -215,6 +215,12 @@ episodes, gel change after 2; S1-percentile setting (τ_f 0.2, τ_i p95 1.89, m 
 pattern) and the Sep 28 power-cycle illumination jump do not alarm. Streamed reading of D (plain CNN): tracker
 53.8 (cross-unit materials 60.5 incl. new pieces; 62.1 excl.) vs no-reset running mean 42.3 vs oracle previous
 session 51.2. Tactile MNIST (153,600 touches, 24 runs): gel swap detected in 4 touches, no false alarm.
+### Tracker, jitter CNN: tracker 53.6 (cross-unit 66.3 excl. new pieces) vs no-reset 49.2 vs oracle prev 55.6.
+### Convergence (campaign D): objects in the estimate 1/2/4/8/19 → plain 47.5/57.6/55.4/54.9/54.8, jitter 49.9/
+52.1/52.4/52.6/52.8; own contacts added to the previous object's estimate (bins by recording order, confounded
+with the force schedule): plain 31.7 → 55.4 (≥32), jitter 36.7 → 56.8.
+### FEATS (force MAE, N; our CNN at 240x320): raw: test 0.83, unknown indenters 0.75, other sensor old gel 2.97,
+new gel 2.11 (paper: 0.8 → 2.99); bg (sensor-level no-contact mean): 2.84 / 3.85; stream: pending.
 ### Marker-residue control (signature ≥ 60 px from markers): own 0.48, same day 0.35, same hw weeks 0.34,
 same hw months 0.29, other unit 0.04, other gel 0.08 (base: 0.53 / 0.40 / 0.39 / 0.32 / 0.15 / 0.16).
 ### Photometric go/no-go (fold D, plain / jitter): subtraction 51.7–56.3 / 53.0–55.8; ratio 51.8–56.1 / 51.0–55.4;

@@ -57,8 +57,10 @@ Material: each campaign is held out in turn (\cref{sec:timeorstate}); the fold t
     CNN, raw & \DOneSupRaw & \DTwoSupRaw \\
     \ \ + previous session's state & \DOneSupPrev & \DTwoSupPrev \\
     \ \ + bare gel & \DOneSupBlank & \DTwoSupBlank \\
+    \ \ + tracker (Algorithm~\ref{alg:tracker}, automatic) & \TrkSupTrkCrossUnit & \TrkSupTrkCrossGel \\
     CNN + jitter, raw & \DOneAugRaw & \DTwoAugRaw \\
     \ \ + previous session's state & \DOneAugPrev & \DTwoAugPrev \\
+    \ \ + tracker (automatic) & \TrkAugTrkCrossUnit & \TrkAugTrkCrossGel \\
     Sparsh-I-JEPA frozen, raw & \DOneIjepaRaw & \DTwoIjepaRaw \\
     \ \ + previous session's state & \DOneIjepaPrev & \DTwoIjepaPrev \\
     \ \ + label-free adapter & \DOneIjepaAd & \DTwoIjepaAd \\
@@ -77,7 +79,14 @@ Run over all \TrkEpisodes\ episodes of the four months in order (\cref{fig:track
 \end{figure*}
 
 \paragraph{Which estimate of the state.}
-\Cref{tab:sources} varies only the test-time estimate $\hat F$ for the trained single-frame CNNs. Any unlabelled frames of the current deployment serve: the previous session, a random other session of the test campaign, the mean field of all its sessions (twenty different objects whose imprints average out), or the bare gel, all land within \SrcSupRandAcc--\SrcSupBlankAcc\pct\ for the plain CNN and \SrcAugRandAcc--\SrcAugPrevAcc\pct\ with jitter, against \SrcSupNoneAcc\ and \SrcAugNoneAcc\ raw. The session's own contacts are the worst contact-based estimate (\SrcSupOwnAcc), because they contain the object. That the bare gel works (\SrcSupBlankAcc) means standard flat-fielding is a valid estimate of the state where blank frames exist; the contact stream gives an equivalent one where they do not, which is the case for every archive and for our training campaigns. The spatially varying low-frequency field does most of the work (\SrcSupLowpassAcc); a single colour per session recovers part of it (\SrcSupMeancolAcc); re-centring in feature space does not (\SrcSupFeatAcc). The fine-scale part of the field adds a few points for the jitter model and none for the plain one.
+\Cref{tab:sources} varies only the test-time estimate $\hat F$ for the trained single-frame CNNs. Any unlabelled frames of the current deployment serve: the previous session, a random other session of the test campaign, the mean field of all its sessions (twenty different objects whose imprints average out), or the bare gel, all land within \SrcSupRandAcc--\SrcSupBlankAcc\pct\ for the plain CNN and \SrcAugRandAcc--\SrcAugPrevAcc\pct\ with jitter, against \SrcSupNoneAcc\ and \SrcAugNoneAcc\ raw. The session's own contacts are the worst contact-based estimate (\SrcSupOwnAcc), because they contain the object. How many objects the estimate needs is measured directly (\cref{fig:convergence}): built from one other object it gives \CvSupObjOne\pct, from two \CvSupObjTwo, from nineteen \CvSupObjNineteen; the object's own imprint is averaged out by the second object already. That the bare gel works (\SrcSupBlankAcc) means standard flat-fielding is a valid estimate of the state where blank frames exist; the contact stream gives an equivalent one where they do not, which is the case for every archive and for our training campaigns. The spatially varying low-frequency field does most of the work (\SrcSupLowpassAcc); a single colour per session recovers part of it (\SrcSupMeancolAcc); re-centring in feature space does not (\SrcSupFeatAcc). The fine-scale part of the field adds a few points for the jitter model and none for the plain one.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig/fig_convergence.pdf}
+  \caption{\textbf{Convergence of the estimate.} Material accuracy on campaign D with the state estimated from the contacts of $n$ other objects (left), and from the previous object's contacts plus the first $k$ contacts of the current object, in recording order (right; the bins differ in episode composition, so only the trend is read).}
+  \label{fig:convergence}
+\end{figure}
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{4pt}
@@ -185,9 +194,35 @@ Normal force cannot be read from appearance across a change of hardware: whole-f
 \label{sec:contact}
 Contact detectors trained on frozen whole-frame features on the seven lead-in sessions detect contact in the other sessions at $\ge$98\pct\ recall but reject \ContactRawSpec\pct\ of those sessions' bare-gel frames: another session's unloaded gel looks like contact. Referencing the embedding to the session's own bare gel restores \ContactRefSpec\pct\ specificity at \ContactRefRecall\pct\ recall (differencing the raw frame against the blank: \ContactBlankdiffSpec\pct). The unloaded state is the reference for contact as for force.
 
-\subsection{Second unit}
+\subsection{Other sensors and datasets}
 \label{sec:second}
-On Real Tactile MNIST (digit from single touches, 10-way, two events: later days on the same gel; the gel swap), every encoder again collapses raw (supervised \TmLaterSupRawTop\pct\ of predictions in one class, frozen Sparsh \TmLaterIjepaRawTop\pct) and recovers with the previous run's state (supervised F1 \TmLaterSupRawF$\rightarrow$\TmLaterSupPrevF; frozen Sparsh \TmLaterIjepaRawAcc$\rightarrow$\TmLaterIjepaPrevAcc\pct; across the gel swap \TmGelIjepaRawAcc$\rightarrow$\TmGelIjepaPrevAcc). Per-run AdaBN works there (\TmLaterSupAdaRunAcc\pct) because every run holds all ten digits---the control for the per-session collapse on our data. The label-free swap did not transfer to coarse digit shape on this dataset; we claim it for texture on our unit.
+Three public datasets record one sensor model on several pieces of hardware; none was made for this question, and each answers a different part of it.
+
+\paragraph{SITR: four GelSight Minis, the same objects.}
+SITR's classification set~\cite{sitr2025} records 20 objects on seven sensors, four of them GelSight Minis, each with a background image and 18 calibration presses; its protocol trains a head on one sensor and tests on the others. Following it with a frozen DINOv2 encoder on the released 224-px images, the hardware is identifiable from the features of every reading we tried (linear probe \SitrDinovRawProbe\pct\ across the four Minis, class held fixed), and recognition across Minis is \SitrDinovRawIntra\pct\ raw, \SitrDinovBgIntra\pct\ with SITR's background image subtracted, and \SitrDinovStreamIntra\pct\ with our estimate---the mean of the test sensor's own contacts, no background image, no presses, no labels (\cref{tab:public}). The estimate needs many contacts here too: from 20 of them it is worse than nothing (\SitrDinovStreamTwentyIntra\pct), from 100 it is \SitrDinovStreamHundredIntra\pct. SITR itself reaches \num{90.2}\pct\ with calibration presses and a million simulated images~\cite{sitr2025}; its ImageNet-ViT baseline with background subtraction reaches \num{73.2}. Sparsh, fed a still image as two identical frames, is outside its regime on this data and we report it only in the supplement.
+
+\paragraph{FEATS: five Minis, six gels, force.}
+FEATS~\cite{feats2025} records indenters with known force maps on five Minis and six gels, with no-contact frames for every combination and two held-out splits: another sensor with its old gel and with a new gel. A linear probe on the no-contact frames alone identifies the sensor at \FeatsProbeSensor\pct\ (chance 20) and the gel at \FeatsProbeGel\pct\ (chance 17): the state is in the bare frame, as on our sensor. A small CNN regressing normal force from the raw image reaches \FeatsRawTestMae\,N on the training hardware and \FeatsRawOldGelMae\,N / \FeatsRawNewGelMae\,N on the other sensor (the paper reports the same rise); read relative to the sensor's no-contact frame it reaches \FeatsBgOldGelMae\,N / \FeatsBgNewGelMae\,N, and relative to the stream estimate \FeatsStreamOldGelMae\,N / \FeatsStreamNewGelMae\,N. Neither reading recovers force across the hardware, and the new gel is the worse case for both: force is carried by the depth of the imprint, which a gel of another stiffness rescales, and no image-space correction restores it---the same boundary as on our sensor.
+
+\paragraph{Real Tactile MNIST: a gel swap on another lab's sensor.}
+On Real Tactile MNIST (digit from single touches, 10-way; 24 runs over three weeks, one gel swap)~\cite{tactilemnist2025}, the pattern replicates (\cref{fig:signature}), the tracker detects the gel swap within \TmTrkLatency\ touches with no other alarm in \TmTrkTouches\ touches, and every encoder collapses raw (supervised \TmLaterSupRawTop\pct\ of predictions in one class, frozen Sparsh \TmLaterIjepaRawTop\pct) and recovers with the previous run's state (supervised F1 \TmLaterSupRawF$\rightarrow$\TmLaterSupPrevF; frozen Sparsh \TmLaterIjepaRawAcc$\rightarrow$\TmLaterIjepaPrevAcc\pct; across the gel swap \TmGelIjepaRawAcc$\rightarrow$\TmGelIjepaPrevAcc). Per-run AdaBN works there (\TmLaterSupAdaRunAcc\pct) because every run holds all ten digits---the control for the per-session collapse on our data. The label-free swap did not transfer to coarse digit shape; we claim it for texture on our unit.
+
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{4pt}
+  \caption{\textbf{SITR, recognition across GelSight Minis} (20 objects; frozen DINOv2 features, head trained on one Mini, tested on the other three; mean over \SitrTrainSensors\ training sensors). Probe: hardware identifiable from the features, class held fixed (chance 25\pct).}
+  \label{tab:public}
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    reading of the image & same Mini & other Minis & probe \\
+    \midrule
+    raw & \SitrDinovRawSame & \SitrDinovRawIntra & \SitrDinovRawProbe \\
+    $-$ background image (SITR) & \SitrDinovBgSame & \SitrDinovBgIntra & \SitrDinovBgProbe \\
+    $-$ mean of 20 contacts & \SitrDinovStreamTwentySame & \SitrDinovStreamTwentyIntra & \SitrDinovStreamTwentyProbe \\
+    $-$ mean of 100 contacts & \SitrDinovStreamHundredSame & \SitrDinovStreamHundredIntra & \SitrDinovStreamHundredProbe \\
+    $-$ mean of all contacts (ours) & \SitrDinovStreamSame & \textbf{\SitrDinovStreamIntra} & \SitrDinovStreamProbe \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Ablations}
 \label{sec:ablation}
