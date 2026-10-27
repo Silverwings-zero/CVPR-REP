@@ -208,6 +208,20 @@ State subtraction pays only in fold D (unseen state, same gel); it is neutral-to
 state's campaign is absent but both other states are in training (A, B), and useless across the gel
 replacement (C). Blank-trained inputs are worse than raw training + test-time subtraction everywhere.
 Jitter is the most robust single choice. Frozen Sparsh-I-JEPA raw / prev per fold: A 42.8 / 37.2; B 36.4 / 36.7; C 4.5 / 2.2; D 11.2 / 35.5.
+### The state tracker (Algorithm 1; 2026-10-27)
+Detection over 2,701 episodes / 55 sessions, thresholds from the first hardware state: 10/210 settings catch
+both hardware changes with zero false alarms; operating point τ_f 0.10, τ_i 3.0, m 3 → unit change after 17
+episodes, gel change after 2; S1-percentile setting (τ_f 0.2, τ_i p95 1.89, m 8) → 22 / 7. Canvas (weak
+pattern) and the Sep 28 power-cycle illumination jump do not alarm. Streamed reading of D (plain CNN): tracker
+53.8 (cross-unit materials 60.5 incl. new pieces; 62.1 excl.) vs no-reset running mean 42.3 vs oracle previous
+session 51.2. Tactile MNIST (153,600 touches, 24 runs): gel swap detected in 4 touches, no false alarm.
+### Marker-residue control (signature ≥ 60 px from markers): own 0.48, same day 0.35, same hw weeks 0.34,
+same hw months 0.29, other unit 0.04, other gel 0.08 (base: 0.53 / 0.40 / 0.39 / 0.32 / 0.15 / 0.16).
+### Photometric go/no-go (fold D, plain / jitter): subtraction 51.7–56.3 / 53.0–55.8; ratio 51.8–56.1 / 51.0–55.4;
+per-pixel location+scale 39–48 / 31–47; 3×3 colour-response alignment 47–48 / 46 → post-subtraction gap not
+photometric; inverse-rendering method dropped.
+### SITR smoke (train Mini-0, 20/class): hardware probe 93–100 % on every frozen feature; DINOv2 Mini→Mini raw
+67.8 / SITR bg 66.7 / our stream 74.3. Full runs in progress.
 ### Other controls
 - DANN (session-adversarial) 52.9 prev vs plain 51.2 → no gain.
 - Noise control: 8-frame means + single-frame-level noise at train and test: 34.0 prev (8 frames
