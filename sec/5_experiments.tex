@@ -66,6 +66,16 @@ Material: each campaign is held out in turn (\cref{sec:timeorstate}); the fold t
   \end{tabular}
 \end{table}
 
+\paragraph{The tracker on the stream.}
+Run over all \TrkEpisodes\ episodes of the four months in order (\cref{fig:tracker}), Algorithm~\ref{alg:tracker} with thresholds set on the first hardware state (\TrkSettingsGood\ of \TrkSettingsTotal\ settings do so) raises exactly two alarms: \TrkUnitLatency\ episodes after the change of unit and \TrkGelLatency\ after the gel replacement, and none in the other \TrkSessions\ sessions, including a canvas session whose own weave hides the pattern and a power-cycle jump of the illumination within a hardware state. Reading campaign D relative to the tracker's own estimate, with its automatic restarts, gives \TrkSupTrkAcc\pct\ for the plain CNN (\TrkSupTrkCrossUnit\pct\ on the cross-unit materials), against \TrkSupNoResetAcc\pct\ for a running mean that is never restarted and \TrkSupOracleAcc\pct\ for the previous session chosen by hand. On Real Tactile MNIST the same rule, calibrated on the first gel's first days, detects the gel swap within \TmTrkLatency\ touches and raises no other alarm in \TmTrkTouches\ touches over \TmTrkRuns\ runs.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig/fig_tracker.pdf}
+  \caption{\textbf{The state tracker over four months.} Top: the two change statistics of every episode against the last 30 episodes; dashed lines are the thresholds, set on the first hardware state; orange lines the two hardware changes; green the tracker's alarms. The illumination jumps inside a hardware state (power cycles) never coincide with a loss of the fine-band correlation, and the weak-pattern sessions never coincide with an illumination jump, so neither raises an alarm. Bottom: material accuracy per session of campaign D, in order, with the image read relative to the tracker's estimate, to a running mean that is never restarted, and to the previous session chosen by hand; the orange line is the gel replacement.}
+  \label{fig:tracker}
+\end{figure*}
+
 \paragraph{Which estimate of the state.}
 \Cref{tab:sources} varies only the test-time estimate $\hat F$ for the trained single-frame CNNs. Any unlabelled frames of the current deployment serve: the previous session, a random other session of the test campaign, the mean field of all its sessions (twenty different objects whose imprints average out), or the bare gel, all land within \SrcSupRandAcc--\SrcSupBlankAcc\pct\ for the plain CNN and \SrcAugRandAcc--\SrcAugPrevAcc\pct\ with jitter, against \SrcSupNoneAcc\ and \SrcAugNoneAcc\ raw. The session's own contacts are the worst contact-based estimate (\SrcSupOwnAcc), because they contain the object. That the bare gel works (\SrcSupBlankAcc) means standard flat-fielding is a valid estimate of the state where blank frames exist; the contact stream gives an equivalent one where they do not, which is the case for every archive and for our training campaigns. The spatially varying low-frequency field does most of the work (\SrcSupLowpassAcc); a single colour per session recovers part of it (\SrcSupMeancolAcc); re-centring in feature space does not (\SrcSupFeatAcc). The fine-scale part of the field adds a few points for the jitter model and none for the plain one.
 
