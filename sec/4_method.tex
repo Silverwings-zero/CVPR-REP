@@ -1,23 +1,49 @@
-\section{Factoring the state out}
+\section{Reading touch relative to the sensor's state}
 \label{sec:method}
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{fig/fig_method.pdf}
-  \caption{\textbf{State swap on real data.} A June canvas contact $x$, its session's loaded-state field $F_s(p)$ (the position-wise mean of the session's other contacts), the residual $r=x-F_s$, the same contact re-rendered under a July session's state (the positive), and a decoy: another surface's residual placed under this crop's state and position. Bottom: the 190--370\,\si{\micro\metre} band. The encoder must match $x$ to $x'$ and not to the decoy; only the surface distinguishes them.}
+  \caption{\textbf{State swap on real data.} A June contact $x$, its session's state field $F_s(p)$ (the position-wise mean of the session's other contacts), the residual $r=x-F_s$, the same contact re-rendered under a July session's state (the positive), and a decoy: another surface's residual placed under this crop's state and position. Bottom: the 190--370\,\si{\micro\metre} band. The encoder must match $x$ to $x'$ and not to the decoy; only the surface distinguishes them.}
   \label{fig:method}
 \end{figure*}
 
-Given $x = F_s(p) + r$ (\cref{fig:method})---the sensor's loaded state at that position in that session, plus a contact-specific residual that carries the surface---the representation keeps the state explicit and reads each cue against the right one. $F_s$ is estimated from the stream the robot already produces, the position-wise mean of contacts, with no labels, calibration presses or simulator; where bare-gel frames exist they estimate the same state (\cref{sec:material}). Three uses follow.
+We write a contact crop at frame position $p$, taken with hardware state $h$, as $x = F_h(p) + r$: the state, a fixed image of the unit and gel, plus the touch. \Cref{sec:signature} established that $F_h$ is shared by every object imaged with that hardware, stable over months of use, and replaced wholesale when the unit or the gel is. A robot that reads touch should therefore keep an estimate of $F_h$ for the hardware it is using, notice when that hardware changes, and read every image relative to the current estimate. Algorithm~\ref{alg:tracker} is that procedure. It uses only the frames the sensor produces anyway; it needs no labels, no calibration object and no bare-gel frame, although it uses a bare-gel frame when the gripper is open.
 
-\paragraph{Stream calibration (test time).}
-Replace the current state by the training mean: $\tilde{x} = x - \hat F(p) + G(p)$, with $G$ the mean field over training sessions. Any contacts of the current deployment serve as $\hat F$: the field of the \emph{previous} session---a different object, hence carrying no information about the current one---optionally updated online with every new contact; the mean field of the deployment so far; or the bare gel. All work about equally well. \Cref{sec:material} compares them, together with the optimistic source (the current session's other contacts) and the dependence on how many contacts have been seen.
+\begin{algorithm}[t]
+\caption{The state tracker, run on the sensor's own stream}
+\label{alg:tracker}
+\begin{algorithmic}[1]
+\Require training mean $G(p)$; thresholds $\tau_f, \tau_i$, persistence $m$, window $W$
+\State epoch accumulators $A(p)\!\gets\!0$, $n(p)\!\gets\!0$; window $\mathcal{W}\!\gets\!\emptyset$; run $\gets 0$
+\For{each contact crop $x$ at position $p$ (any object, no label)}
+  \State $\hat F \gets (A + kG)/(n + k)$ \Comment{reading estimate, $k$ pseudo-counts}
+  \State $\hat R \gets$ mean of $\mathcal{W}$ at $p$ \Comment{detection reference: the last $W$ episodes}
+  \State $c \gets$ corr$\big(\text{band}(x), \text{band}(\hat R)\big)$ away from markers; \ $\delta \gets \|\text{lowpass}(x) - \text{lowpass}(\hat R)\|_1$
+  \State run $\gets$ run $+1$ if $c < \tau_f$ and $\delta > \tau_i$ else $0$
+  \If{run $\ge m$} \Comment{the hardware has changed}
+    \State $A, n \gets 0$; re-insert the last $m$ episodes; run $\gets 0$; hold detection for $W$ episodes
+  \EndIf
+  \State \textbf{read} $x' \gets x - \hat F(p) + G(p)$ \Comment{to the encoder and head}
+  \State $A(p) \mathrel{+}= x$; $n(p) \mathrel{+}= 1$; push $x$ to $\mathcal{W}$ (drop the oldest beyond $W$)
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
-\paragraph{State swap (training time, label-free).}
-Each training contact is re-rendered under another session's state, $x' = r + F_{s'}(p)$, and an encoder $f$ is trained to match $f(x)$ and $f(x')$ with InfoNCE~\cite{oord2018cpc,chen2020simclr}. Two details matter. Batches are built from a few sessions so that negatives share the anchor's state, and \emph{decoy} negatives are added: another contact's residual placed at the anchor's position under the anchor's state, $x^{d} = r_{j} + F_s(p)$, so that the only way to tell the positive from the decoy is the surface. Sessions and image positions are recording metadata; no material label enters the objective. (The gain from the decoys is measured in \cref{sec:ablation}.)
+\paragraph{Estimate.}
+The estimate is the position-wise mean of the contacts seen since the last hardware change, shrunk toward the training mean $G$ where few contacts cover a pixel. Because every object imprints the gel somewhere else, the objects average out and the hardware remains: this is the retrospective flat-field of microscopy~\cite{singh2014illumination,peng2017basic}, taken from a robot's contact stream. Its bias is the mean imprint of the objects it averages, so the estimate improves with the number of distinct objects (\cref{sec:material}), and the session's own contacts, which share one object, are the worst source.
 
-\paragraph{State-swap adapter on a frozen foundation model.}
-The same objective trains a two-layer MLP on top of a frozen tactile foundation model (Sparsh~\cite{higuera2024sparsh}, 768-d tokens mean-pooled); the encoder's own two-frame input is re-rendered on both frames. Training takes twelve minutes on one GPU and needs neither labels nor any data from the deployment day.
+\paragraph{Detection.}
+Two statistics compare each new episode with the last $W$ episodes: the correlation of the fine band (190--370\,\si{\micro\metre}, away from the markers) with the reference, and the distance of the low-frequency illumination field. A hardware change is declared only when both leave the same-hardware range for $m$ consecutive episodes. Either statistic alone fails: materials with a strong texture of their own (canvas, the back of leather) have a low fine-band correlation on any hardware, and the illumination field occasionally jumps within a hardware state after a power cycle; the two never fail together. The thresholds are set once, on the first hardware state of the training data, and never touched again.
 
-\paragraph{The unloaded state for geometry and contact.}
-Normal force and contact are not appearance quantities. We read them against the \emph{unloaded} gel, the bare-gel frames the robot sees between grasps: for force, the marker grid detected on the bare gel at native resolution is matched to the grid in a contact frame, and the affine summary of the displacement field (divergence, mean displacement, net shear) is mapped to force by a linear map; for contact, a detector operates on $f(x) - f(\text{bare gel of the session})$. \Cref{sec:force,sec:contact} show that the force reference only needs refreshing at a gel swap (a new gel has a new stiffness), whereas the appearance state drifts daily.
+\paragraph{Reading.}
+The image is read relative to the current estimate: $x' = x - \hat F(p) + G(p)$. The encoder is trained on raw images; the classifier head is fitted on training images read relative to their own previous session, so that it sees one transform at both ends. Training the encoder on state-subtracted inputs is worse in every fold (\cref{sec:timeorstate}): the subtraction belongs at test time, where it is needed.
+
+\paragraph{Conditions.}
+Three conditions, each measured in \cref{sec:exp}, delimit the procedure. The state is additive: dividing by the estimate instead of subtracting it, or aligning the per-pixel colour response of the hardware to the training hardware, does no better. The estimate needs several objects: one is biased by its own imprint, twenty are not. The procedure covers rendering changes and not mechanical ones: a replaced gel changes how the surface deforms as well as how it is imaged, and no image-space correction recovers it; force must then be read as marker displacement against the unloaded gel.
+
+\paragraph{Learning without labels.}
+Where a frozen foundation model is to be adapted, the same quantity trains an adapter with no labels and no data from the new hardware: each training contact is re-rendered under another session's state, $x' = r + F_{s'}(p)$, and the adapter must match $f(x)$ to $f(x')$ (InfoNCE~\cite{oord2018cpc,chen2020simclr}) and not to a decoy, another surface's residual placed under the anchor's own state (\cref{fig:method}). Batches are drawn from a few sessions so that negatives share the anchor's state. Sessions and positions are recording metadata; no material label enters.
+
+\paragraph{Geometry.}
+Normal force and contact are read against the \emph{unloaded} gel: the marker grid detected on the bare gel at native resolution is matched to the grid in a contact frame, and the affine summary of the displacement field (divergence, mean displacement, net shear) is mapped to force by a linear map; a contact detector operates on $f(x) - f(\text{bare gel})$. The force reference changes with the gel (a new gel has a new stiffness), the appearance state with the unit and the gel.
