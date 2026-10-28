@@ -22,25 +22,22 @@ The main split trains on campaigns A, B and C (June and July, \EpTrainABC\ episo
     \ \ AdaBN per hardware state (non-causal)~\cite{li2018adabn} & \af{\TtaSupAdabnEpochsAcc}{\TtaSupAdabnEpochsF} & \DOneTtaSupAdabnEpochs & \DTwoTtaSupAdabnEpochs & \TtaSupAdabnEpochsTop \\
     \ \ $-$ previous session's state & \af{\SrcSupPrevAcc}{\SrcSupPrevF} & \DOneSupPrev & \DTwoSupPrev & \SrcSupPrevTop \\
     \ \ $-$ the session's bare gel & \af{\SrcSupBlankAcc}{\SrcSupBlankF} & \DOneSupBlank & \DTwoSupBlank & \SrcSupBlankTop \\
-    \ \ $-$ \cref{alg:tracker}, running since June & \af{\SrcSupTrkAcc}{\SrcSupTrkF} & \DOneSupTrk & \DTwoSupTrk & \SrcSupTrkTop \\
-    \ \ $-$ \cref{alg:tracker}, started in September & \textbf{\af{\SrcSupTrkDepAcc}{\SrcSupTrkDepF}} & \DOneSupTrkDep & \DTwoSupTrkDep & \SrcSupTrkDepTop \\
+    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\SrcSupTrkFrAcc}{\SrcSupTrkFrF}} & \DOneSupTrkFr & \DTwoSupTrkFr & \SrcSupTrkFrTop \\
     \midrule
     \multicolumn{5}{@{}l}{\emph{CNN trained with photometric jitter}} \\
     raw & \af{\SrcAugNoneAcc}{\SrcAugNoneF} & \DOneAugRaw & \DTwoAugRaw & \SrcAugNoneTop \\
     \ \ AdaBN per hardware state (non-causal) & \af{\TtaAugAdabnEpochsAcc}{\TtaAugAdabnEpochsF} & \DOneTtaAugAdabnEpochs & \DTwoTtaAugAdabnEpochs & \TtaAugAdabnEpochsTop \\
     \ \ TENT, mixed batches (non-causal) & \af{\TtaAugTentIidAcc}{\TtaAugTentIidF} & \DOneTtaAugTentIid & \DTwoTtaAugTentIid & \TtaAugTentIidTop \\
     \ \ $-$ previous session's state & \af{\SrcAugPrevAcc}{\SrcAugPrevF} & \DOneAugPrev & \DTwoAugPrev & \SrcAugPrevTop \\
-    \ \ $-$ \cref{alg:tracker}, running since June & \af{\SrcAugTrkAcc}{\SrcAugTrkF} & \DOneAugTrk & \DTwoAugTrk & \SrcAugTrkTop \\
-    \ \ $-$ \cref{alg:tracker}, started in September & \textbf{\af{\SrcAugTrkDepAcc}{\SrcAugTrkDepF}} & \DOneAugTrkDep & \DTwoAugTrkDep & \SrcAugTrkDepTop \\
+    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\SrcAugTrkFrAcc}{\SrcAugTrkFrF}} & \DOneAugTrkFr & \DTwoAugTrkFr & \SrcAugTrkFrTop \\
     \midrule
     \multicolumn{5}{@{}l}{\emph{Frozen foundation encoders}} \\
     Sparsh-I-JEPA, raw & \af{\IjepaRawAcc}{\IjepaRawF} & \DOneIjepaRaw & \DTwoIjepaRaw & \IjepaRawTop \\
     \ \ $-$ previous session's state & \af{\IjepaPrevAcc}{\IjepaPrevF} & \DOneIjepaPrev & \DTwoIjepaPrev & \IjepaPrevTop \\
-    \ \ $-$ \cref{alg:tracker}, running since June & \af{\IjepaTrkAcc}{\IjepaTrkF} & \DOneIjepaTrk & \DTwoIjepaTrk & \IjepaTrkTop \\
-    \ \ $-$ \cref{alg:tracker}, started in September & \textbf{\af{\IjepaTrkDepAcc}{\IjepaTrkDepF}} & \DOneIjepaTrkDep & \DTwoIjepaTrkDep & \IjepaTrkDepTop \\
+    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\IjepaTrkFrAcc}{\IjepaTrkFrF}} & \DOneIjepaTrkFr & \DTwoIjepaTrkFr & \IjepaTrkFrTop \\
     \ \ label-free adapter, raw (3 seeds) & \af{\IjepaAdAcc}{\IjepaAdF} & \DOneIjepaAd & \DTwoIjepaAd & \IjepaAdTop \\
-    Sparsh-DINO, raw\,/\,\cref{alg:tracker} & \af{\SdinoRawAcc}{\SdinoTrkAcc} & \af{\DOneSdinoRaw}{\DOneSdinoTrk} & \af{\DTwoSdinoRaw}{\DTwoSdinoTrk} & \af{\SdinoRawTop}{\SdinoTrkTop} \\
-    Sparsh-MAE, raw\,/\,\cref{alg:tracker} & \af{\MaeRawAcc}{\MaeTrkAcc} & \af{\DOneMaeRaw}{\DOneMaeTrk} & \af{\DTwoMaeRaw}{\DTwoMaeTrk} & \af{\MaeRawTop}{\MaeTrkTop} \\
+    Sparsh-DINO, raw\,/\,\cref{alg:tracker} & \af{\SdinoRawAcc}{\SdinoTrkFrAcc} & \af{\DOneSdinoRaw}{\DOneSdinoTrkFr} & \af{\DTwoSdinoRaw}{\DTwoSdinoTrkFr} & \af{\SdinoRawTop}{\SdinoTrkFrTop} \\
+    Sparsh-MAE, raw\,/\,\cref{alg:tracker} & \af{\MaeRawAcc}{\MaeTrkFrAcc} & \af{\DOneMaeRaw}{\DOneMaeTrkFr} & \af{\DTwoMaeRaw}{\DTwoMaeTrkFr} & \af{\MaeRawTop}{\MaeTrkFrTop} \\
     DINOv2, raw\,/\,previous session & \af{\DinovRawAcc}{\DinovPrevAcc} & \af{\DOneDinovRaw}{\DOneDinovPrev} & \af{\DTwoDinovRaw}{\DTwoDinovPrev} & \af{\DinovRawTop}{\DinovPrevTop} \\
     \bottomrule
   \end{tabular}}
@@ -51,7 +48,7 @@ The main split trains on campaigns A, B and C (June and July, \EpTrainABC\ episo
 
 \Cref{tab:material} gives the main result. Read raw, the CNN scores \SrcSupNoneAcc\pct\ and puts \SrcSupNoneTop\pct\ of all test episodes into a single class, one of the four materials it saw on unit 2. The fifteen materials it learned on unit 1 score \DOneSupRaw\pct. The four materials learned on unit 2 score \DTwoSupRaw\pct, but only because the classifier sends most episodes to them. Frozen Sparsh encoders show the same collapse. The jitter CNN collapses less (\SrcAugNoneAcc\pct, \SrcAugNoneTop\pct\ in one class) but still scores \DOneAugRaw\pct\ on the cross-unit materials.
 
-Reading the images relative to the state undoes the collapse. With \cref{alg:tracker} started at the deployment, the CNN reaches \SrcSupTrkDepAcc\pct\ and the cross-unit materials \DOneSupTrkDep\pct. This matches what the previous session's state (\SrcSupPrevAcc\pct) or a bare-gel frame of the same session (\SrcSupBlankAcc\pct) gives, although the tracker chooses its own source and restarts by itself, while those two rows are picked by hand. Frozen Sparsh-I-JEPA rises from \IjepaRawAcc\ to \IjepaTrkDepAcc\pct, and the other Sparsh encoders gain as well. The four materials across the gel replacement do not gain. Their raw score is inflated by the collapse, and with the state removed they score \DTwoSupTrkDep\pct\ for the CNN and \DTwoAugTrkDep\pct\ for the jitter CNN (\cref{sec:timeorstate}).
+Reading the images relative to the state undoes the collapse. With \cref{alg:tracker}, the CNN reaches \SrcSupTrkFrAcc\pct\ and the cross-unit materials \DOneSupTrkFr\pct. This lies between what the previous session's state (\SrcSupPrevAcc\pct) and a bare-gel frame of the same session (\SrcSupBlankAcc\pct) give, although the tracker chooses its own source and restarts by itself, while those two rows are picked by hand. Frozen Sparsh-I-JEPA rises from \IjepaRawAcc\ to \IjepaTrkFrAcc\pct, and the other Sparsh encoders gain as well. The four materials across the gel replacement do not gain. Their raw score is inflated by the collapse, and with the state removed they score \DTwoSupTrkFr\pct\ for the CNN and \DTwoAugTrkFr\pct\ for the jitter CNN (\cref{sec:timeorstate}).
 
 The adaptation baselines do not fix the collapse. Label-shift correction re-estimates the class priors from the test predictions, finds the absorbing class frequent, and makes the collapse worse. Online TENT, which updates on one object at a time as a robot would, collapses entirely, and AdaBN per hardware state reaches \TtaSupAdabnEpochsAcc\pct\ even with the true change dates and all of the state's test images. Both methods assume that a batch mixes classes, and one object per session violates this~\cite{burns2021bn,gong2022note}. Given mixed batches that a robot would not have, TENT reaches \TtaSupTentIidAcc\pct. For the jitter CNN, every adaptation baseline is below its raw score, and only the state estimate improves it.
 
@@ -76,7 +73,8 @@ The label-free adapter learns from the same decomposition without labels or test
     dataset & changes & detected & delay & false alarms \\
     & & (\pct) & (median) & per 1{,}000 \\
     \midrule
-    ours (episodes) & unit, gel & \TeOursDet & \TeOursDelay & \TeOursFa \\
+    ours, whole frames (episodes) & unit, gel & \TeOursFramesDet & \TeOursFramesDelay & \TeOursFramesFa \\
+    ours, material crops (episodes) & unit, gel & \TeOursDet & \TeOursDelay & \TeOursFa \\
     SITR~\cite{sitr2025} (images) & Mini to Mini & \TeSitrMiniDet & \TeSitrMiniDelay & \TeSitrFa \\
     FEATS~\cite{feats2025} (images) & unit, gel & \TeFeatsDet & \TeFeatsDelay & \TeFeatsFa \\
     Tactile MNIST~\cite{tactilemnist2025} (touches) & gel & \TeTmnistDet & \TeTmnistDelay & \TeTmnistFa \\
@@ -84,9 +82,9 @@ The label-free adapter learns from the same decomposition without labels or test
   \end{tabular}
 \end{table}
 
-Run over all \EpCrops\ episodes in recording order (\cref{fig:tracker}), \cref{alg:tracker} raises a single alarm, \TrkGelLatency\ episodes after the gel replacement, and no false alarm in \TrkSessions\ sessions. It misses the change of unit. There, the illumination distance stays above its threshold for \TrkUnitIllumRun\ consecutive episodes, but the fine-band correlation drops below its threshold for at most \TrkUnitFineRun\ episodes in a row. The fine statistic is weak on our stream. Its median on the first hardware state is only \TrkFineMedianSone\ and its 10th percentile \TrkTauF, because an eight-episode window holds a single object and the mean of a few crops per pixel is dominated by that object's texture. A canvas session, whose weave lowers the fine correlation, and the illumination steps between sessions raise no alarm because they never occur together. \Cref{tab:detect} applies the same rule to streams spliced from four datasets, with thresholds set on one unit of each and nothing tuned on change points. On the public datasets, whose items are whole frames, it detects \TeDetMin--\TeDetMax\pct\ of the changes within a median of \TeDelayMin--\TeDelayMax\ items, at \TeFaMax\ or fewer false alarms per 1{,}000 items. The supplement gives the trade-off for other thresholds. The unit change of our recordings lies inside the training campaigns. We therefore report the reading of campaign D both for the tracker running since June and for the tracker started at the deployment in September from the training mean. We added this second protocol after the first had missed the unit change. Started in September, the tracker raises a single alarm, \TrkDepGelLatency\ episodes after the gel replacement, and no other.
+Run over all \EpRecorded\ episodes in recording order (\cref{fig:tracker}), the detector raises \FrAlarms\ alarms: \FrUnitLatency\ episodes after the change of unit, \FrGelLatency\ after the gel replacement, and \FrFalseAlarms\ false alarms in 55 sessions. With stricter thresholds, the 1st and 99th percentiles, it detects both changes later (\FrSweepOneUnit\ and \FrSweepOneGel\ episodes) and raises no false alarm (supplement). A canvas session, whose weave lowers the fine correlation, and the illumination steps between sessions raise no alarm, because they do not occur together. \Cref{tab:detect} applies the same rule to streams spliced from four datasets, with thresholds set on one unit of each and nothing tuned on change points. It detects \TeOursFramesDet\pct\ of the changes spliced from our recordings: \TeOursFramesUnitDet\pct\ of those that involve the other unit, and \TeOursFramesGelDet\pct\ of the gel changes on the same unit. On the public datasets it detects \TePubDetMin--\TePubDetMax\pct, with \TePubFaMax\ or fewer false alarms per 1{,}000 items everywhere. Whole frames matter. Our first implementation computed the statistics on the material crops, which cover each frame sparsely and hold one object per window. On the real stream it missed the change of unit, and on spliced streams it detected \TeOursDet\pct\ of the changes. A per-object variant on the crops did no better (supplement).
 
-Detecting every change matters. A running mean that is never restarted reaches \SrcSupNoResetAcc\pct\ for the CNN. The tracker running since June restarts at the gel replacement but not at the change of unit, and it reaches \SrcSupTrkAcc\pct, because its estimate for the September sessions still averages objects seen on the first unit. Started at the deployment, it reaches \SrcSupTrkDepAcc\pct. Two objects are enough to estimate a new state (\cref{sec:sources}), so the first object after a restart is read with a poorer estimate than the rest.
+Detecting the changes matters. A running mean that is never restarted reaches \SrcSupNoResetAcc\pct\ for the CNN. Restarted by the crop-based detector, which missed the change of unit, the estimate for the September sessions still averaged objects of the first unit, and the CNN reached \SrcSupTrkAcc\pct. Restarted by the whole-frame detector it reaches \SrcSupTrkFrAcc\pct, and started afresh at the deployment in September \SrcSupTrkFrDepAcc\pct. The two false alarms cost nothing measurable. A tracker started in September and restarted only at the gel replacement gives \SrcSupTrkDepAcc\pct, because two objects already give a good estimate (\cref{sec:sources}).
 
 \subsection{What the estimate needs}
 \label{sec:sources}
@@ -108,7 +106,7 @@ Detecting every change matters. A running mean that is never restarted reaches \
     a random other session of the campaign & \SrcSupRandAcc & \SrcAugRandAcc \\
     all sessions of the campaign (non-causal) & \SrcSupCampAcc & \SrcAugCampAcc \\
     the session's bare gel & \SrcSupBlankAcc & \SrcAugBlankAcc \\
-    \cref{alg:tracker} started in September (causal) & \SrcSupTrkDepAcc & \SrcAugTrkDepAcc \\
+    \cref{alg:tracker} (causal, automatic restarts) & \SrcSupTrkFrAcc & \SrcAugTrkFrAcc \\
     \bottomrule
   \end{tabular}
 \end{table}
