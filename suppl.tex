@@ -156,6 +156,9 @@ gel swap & supervised & \af{\TmGelSupRawAcc}{\TmGelSupRawF} (\TmGelSupRawTop) & 
  & Sparsh-I-JEPA & \af{\TmGelIjepaRawAcc}{\TmGelIjepaRawF} (\TmGelIjepaRawTop) & \af{\TmGelIjepaPrevAcc}{\TmGelIjepaPrevF} & -- \\ \bottomrule
 \end{tabular}\end{table}
 
+\section{HCT}
+We use the HCT frames of TVL~\cite{tvl2024} that carry the material labels and the released few-shot split of \cite{mohsan2026language}: \HctFrames\ frames from \HctSessions\ sessions on \HctDays\ days, \HctClasses\ material classes, native $240\times320$ frames cropped to $238\times322$ for DINOv2 ViT-B/14. \HctTestSessInTrain\ of the \HctTestSessions\ test sessions of the released split also appear in its training set. Session protocol: five folds over sessions. Day protocol: each day held out in turn, classes absent from the training days dropped, days with fewer than 20 test frames or one class skipped. Readings: raw; background, $x - B_s + \bar B$ with the session's released no-contact frame $B_s$; stream, the per-object running mean of \cref{alg:tracker} within the test day (sessions in time order, each session one object, the training mean as a one-object prior), with training frames read relative to the mean of the other training sessions of their day. Heads: MLPs with three seeds, macro accuracy over classes. Published split raw\,/\,background: \HctPubRawAcc\,/\,\HctPubBgAcc; sessions held out: \HctSessRawAcc\,/\,\HctSessBgAcc; days held out raw\,/\,background\,/\,stream: \HctDayRawAcc\,/\,\HctDayBgAcc\,/\,\HctDayStreamAcc\ (top-class share \HctDayRawTop, \HctDayBgTop, \HctDayStreamTop\pct). The no-contact frame alone, through a logistic regression on DINOv2 features left out one session at a time, gives the material at \HctProbeLoso\pct\ when sessions of the same day are in training and \HctProbeOtherDays\pct\ when they are not (most frequent class \HctProbeMajority\pct).
+
 \section{The detector on our stream}
 \begin{figure}[h]
   \centering
