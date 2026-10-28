@@ -2,7 +2,7 @@
 \usepackage[review]{cvpr}
 \input{preamble}
 \input{numbers}
-\usepackage{booktabs,multirow,siunitx,xcolor}
+\usepackage{booktabs,multirow,siunitx,xcolor,graphicx}
 \definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
 \usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
 \def\paperID{*****}
@@ -17,78 +17,108 @@
 \begin{document}
 \maketitle
 
-\section{Data and protocol details}
-\paragraph{Recording.} GelSight Mini (native 1640$\times$1232, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}) on one finger of a Franka parallel gripper, ATI Nano17 on the other (host-timestamped at 130--190\,Hz; normal force valid in all campaigns). Episodes: 20 materials; commanded normal force 0.9--5\,N; stroke 10--100\,mm/s. Campaigns: A June 15--22 (15 sessions, 570 episodes), B July 6--8 (15, 450), C July 9--13 (5, 340), D September 22 -- October 15 (20, 1{,}351); every session holds one material. Hardware: unit 1 with gel 1 from June 15 to July 9 (state S1); unit 2 with gel 2 from July 10 to October 9, 18:42 (S2); unit 2 with gel 3 from the cork session of October 9, 19:37 (S3). The laboratory log recorded four gel replacements and a change of unit ``between campaigns''; the images record the two changes above (fine-pattern blocks, marker layouts and illumination fields all agree), which the operators confirmed. Campaign D also recorded 620 bare-gel frames in 44 sessions (a start blank and lubricant pre/post pairs) and, in seven sessions, a 3-s bare-gel lead-in before every grasp.
-\paragraph{Crops and frames.} Material models read 12 native 192-px crops per episode (4 tube anchors $\times$ 3 fixed positions inside the stroke window), markers inpainted per frame; the eight-frame variant sums the 8 consecutive frames of each tube exactly (uint16). Force and contact models read whole native frames: four per episode at the 10/40/70/95\,\% quantiles of the episode's force, plus lead-in, pre-contact and onset frames (force crossing 0.05/0.2/0.5\,N) where a lead-in exists.
-\paragraph{State fields.} Per session, the position-wise sum and count of its contact crops in frame coordinates (Bayesian shrinkage with weight 2 toward the all-session mean at low coverage); a crop's own episode is left out when its own session is the source. Previous-session calibration uses the full field of the session immediately preceding in wall-clock order. The reference field $G$ is the mean over training sessions.
-\paragraph{Signature measurement.} For each sampled contact crop the 190--370\,\si{\micro\metre} band (difference of 17- and 33-px box means of the grey image) is correlated with the same band of a partner session's state field over pixels covered by at least three of that field's crops and at least 60\,px from every printed marker of the session (markers detected on the session's first raw frame; inpainting radius $\le$59\,px, band support 16\,px). With the marker surroundings included the same-hardware medians are 0.05 higher and the cross-hardware floor rises from \HwFarOtherUnit\ to \HwOtherUnit, which is inpainting residue. Partner categories by the hardware timeline: own session (episode left out), other object same day, same unit and gel on another day within a month, same unit and gel three months apart (July 10--13 against September 28 -- October 9), the other unit, the other gel of the same unit.
+\section{Data and protocol}
+\paragraph{Recording.} A GelSight Mini (native 1640$\times$1232, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}) sits on one finger of a Franka parallel gripper and an ATI Nano17 on the other (host-timestamped at 130--190\,Hz). Commanded normal force is 0.9--5\,N and the stroke speed 10--100\,mm/s. Campaigns: A, June 15--22 (15 sessions); B, July 6--8 (15); C, July 9--13 (5); D, September 22 to October 15 (20). Every session holds one material. \EpRecorded\ episodes were recorded and accepted. \EpNoCrops\ episodes of campaign D have no span of eight consecutive frames in contact inside the stroke window, so the material experiments use \EpCrops\ episodes (\EpTrainABC\ in A--C, \EpTestD\ in D). Hardware: unit 1 with gel 1 from June 15 to July 9 (S1), unit 2 with gel 2 from July 10 to October 9, 18:42 (S2), unit 2 with gel 3 from the cork session of October 9, 19:37 (S3). The laboratory log recorded four gel replacements and a change of unit ``between campaigns''. The images show only the two changes above. Fine-pattern blocks, marker layouts and illumination fields agree on them, and the operators confirmed them against their notes. Campaign D also recorded bare-gel frames (a start frame and lubricant pre/post pairs) and, in seven sessions, a 3-s bare-gel lead-in before every grasp.
+\paragraph{Crops.} Material models read twelve native 192-px crops per episode: four start frames inside the stroke window, three fixed positions each. Markers are inpainted per frame. Single-frame models read the first frame of each crop; the eight-frame variant sums eight consecutive frames exactly. Force and contact models read whole native frames.
+\paragraph{State fields.} Per session, the position-wise sum and count of its contact crops in frame coordinates, shrunk toward the all-session mean with weight 2 where few crops cover a pixel. A crop's own episode is left out when its own session is the source. The reference $G$ is the mean over the training sessions.
+\paragraph{Encoders and heads.} The CNN's input is the BGR crop, two band-pass detail images (the crop minus its 9-px and 33-px box means) and two log colour ratios high-passed at 33\,px (11 channels). Four stages of two $3\times3$ convolutions with BatchNorm and GELU and a blur-pool downsampling (widths 32, 64, 96, 128) are followed by global average pooling and a linear map to 192 dimensions. Training: cross-entropy, 12 epochs, AdamW (lr $3\cdot10^{-4}$, weight decay $10^{-3}$, cosine schedule), batch 48. Sparsh (ViT-B/16) runs on native 192-px crops ($12\times12$ tokens) with its sinusoidal position embeddings regenerated for that grid and its own two-frame input (frames 7 and 2 of an eight-frame crop). DINOv2-base runs on the central 182\,px of the eight-frame mean with ImageNet normalisation. Features are mean-pooled final tokens (768-d). Heads: MLP (256 hidden, dropout 0.2, 40 epochs, AdamW) on standardised frozen embeddings, three seeds, logits summed per episode.
 
-\paragraph{The tracker.} Window $W=30$ episodes, $k=2$ pseudo-counts toward $G$. Change statistics per episode: median over its crops of the fine-band correlation with the window mean (pixels with window count $\ge 3$, $\ge 60$\,px from markers) and the mean absolute difference of the Gaussian-smoothed ($\sigma=33$\,px) grey images. Thresholds were searched on a grid (fine $\tau_f\in\{p_5, 0.1, 0.15, 0.2, 0.25, 0.3\}$, illumination $\tau_i\in\{p_{95}, p_{99}, 1.5, 2.0, 2.5, 3.0, 3.5\}$ grey levels, persistence $m\in\{1,2,3,5,8\}$, percentiles from the first hardware state's \num{1086} episodes): \TrkSettingsGood\ of \TrkSettingsTotal\ settings detect both changes with no false alarm; the operating point ($\tau_f=\TrkTauF$, $\tau_i=\TrkTauI$, $m=\TrkM$) has latencies \TrkUnitLatency\ and \TrkGelLatency\ episodes, the pure-percentile setting ($\tau_f=\TrkPctTauF$, $\tau_i=p_{95}=\TrkIllumPninetyfive$, $m=\TrkPctM$) \TrkPctUnitLatency\ and \TrkPctGelLatency. After an alarm detection is held for $W$ episodes while the window turns over. On Real Tactile MNIST (320$\times$240 SDK frames, $\sim$58\,\si{\micro\metre}/px): band 3--7\,px, $\sigma=6$\,px, marker radius 11\,px, $W=60$ touches, thresholds from the first gel's first three days; \TmTrkGood\ of \TmTrkTotal\ settings detect the gel swap with no false alarm, the best within \TmTrkLatency\ touches.
-
-\paragraph{Photometric readings tested and rejected.} Besides subtraction ($x-\mu_F+\mu_G$): the ratio $x\,\mu_G/\mu_F$; per-pixel, per-channel location and scale ($(x-\mu_F)\,s_G/s_F+\mu_G$, $s$ the low-pass standard deviation of a session's contacts); and a per-pixel $3\times3$ colour-response alignment $C_G^{1/2}C_F^{-1/2}(x-\mu_F)+\mu_G$ from the low-pass colour covariances of the contacts. On the fold that trains on A+B+C and tests on D (plain CNN\,/\,jitter CNN, previous-session source): subtraction 51.7\,/\,55.8, ratio 51.8\,/\,55.4, location and scale 48.0\,/\,46.5, colour alignment 47.1\,/\,46.2; with the campaign's contacts as the source: 54.9\,/\,53.0, 56.1\,/\,51.0, 39.3\,/\,31.4, 47.7\,/\,45.7. The richer models do not help, so the gap that remains after subtraction is not a per-pixel photometric difference.
-
-\paragraph{Public datasets.} SITR classification set: 20 objects on seven sensors (sensors 0, 4, 5, 6 are GelSight Minis), 800 training and 200 test images per object and sensor at 224\,px as released; we use 200 training images per class from the training sensor and 100 test images per class from every sensor, a frozen DINOv2 ViT-B/14 (mean of patch tokens), MLP heads as in the main text, and the hardware probe is a logistic regression on the test features with class-stratified five-fold cross-validation. FEATS: samples are 240$\times$320 images with FEA force maps; the training set is dominated by one sensor, the two held-out splits are another sensor with its old and with a new gel; sensor identity of a sample is taken from the nearest no-contact template by the image periphery (the sensor is unambiguous, the gel within a sensor is not), so the background reading uses the sensor-level mean of the no-contact frames; the regressor is our encoder stem on the full 240$\times$320 image with a two-layer head on $\log(1+|f_z|)$, eight epochs. Real Tactile MNIST: as in the main text.
-
-\paragraph{Heads and statistics.} MLP heads (256 hidden, dropout 0.2, 40 epochs, AdamW) on standardised frozen embeddings, three seeds; per-episode pooled logits; macro accuracy, macro-F1 and the top-class share. Confidence intervals: paired bootstrap over the 20 materials (4{,}000 resamples).
-
-\section{Full material results (eight-frame inputs)}
-\begin{table}[h]\centering\small
-\caption{Eight-frame protocol (the earlier protocol; see the frame ablation). Acc\,/\,F1; own: own-session calibration (optimistic); prev.: previous session; AdaBN: whole test campaign; per session: one object per session.}
-\begin{tabular}{@{}lccccc@{}}\toprule
-model & raw & own & prev. & AdaBN & per session \\ \midrule
-supervised (3 seeds) & \af{\SupRawAcc}{\SupRawF} & \af{\SupOwnAcc}{\SupOwnF} & \af{\SupPrevAcc}{\SupPrevF} & \af{\SupAdaAcc}{\SupAdaF} & \SupAdaSessAcc \\
-supervised + swap & \af{\SupSwapRawAcc}{\SupSwapRawF} & 36.8\,/\,34.1 & \af{\SupSwapPrevAcc}{\SupSwapPrevF} & \SupSwapAdaAcc & 4.2 \\
-supervised + jitter (2 seeds) & \SupAugRawSAcc & 37.7\,/\,34.0 & 40.5 & 37.6 & 6.5 \\
-label-free swap, base (3 seeds) & \af{\SwapBaseRawAcc}{\SwapBaseRawF} & 27.6 & \af{\SwapBasePrevAcc}{\SwapBasePrevF} & 25.4 & 6.9 \\
-label-free swap + decoys (3 seeds) & \af{\SwapRawAcc}{\SwapRawF} & 27.9 & -- & 6.1 & 5.4 \\
-normal-map alignment & \af{\NmRawAcc}{\NmRawF} & 24.8 & -- & 33.6 & 8.0 \\
-normal-map + swap & \af{\NmSwapRawAcc}{\NmSwapRawF} & \af{\NmSwapOwnAcc}{\NmSwapOwnF} & -- & 34.8 & 7.3 \\
-TactSpace replica (2 seeds) & \TactSpaceRawAcc & -- & -- & -- & -- \\
-reconstruction-only floor & 7.1\,/\,2.7 & 4.4 & -- & 14.8 & 5.3 \\ \bottomrule
-\end{tabular}\end{table}
-
-\begin{table}[h]\centering\small
-\caption{Calibration sources, supervised CNN (eight-frame), acc\,/\,F1.}
-\begin{tabular}{@{}lc@{}}\toprule
-state source & acc\,/\,F1 \\ \midrule
-none & \af{\SupRawAcc}{\SupRawF} \\
-own session, other episodes (optimistic) & \af{\SupOwnAcc}{\SupOwnF} \\
-own session, earlier episodes only (causal) & \af{\SupCausalAcc}{\SupCausalF} \\
-online (previous session, updated per contact) & \af{\SupOnlineAcc}{\SupOnlineF} \\
-previous session only & \af{\SupPrevAcc}{\SupPrevF} \\
-\quad previous session same day (11 sessions) / other day (9) & 40.4 / 30.1 \\ \bottomrule
-\end{tabular}\end{table}
-Causal estimation by number of earlier contacts $k$ in the session (acc): $k$=0 16.7, 1 8.3, 2--4 18.9, 5--9 18.7, 10--19 28.0, $\ge$20 34.0; online: 26.7, 35.0, 33.3, 31.7, 28.3, 34.2.
-
-\section{Public encoders}
-Sparsh (ViT-B/16) runs on native 192-px crops (12$\times$12 tokens) with its sinusoidal position embeddings regenerated for that grid and its own two-frame input (frames 7 and 2 of the tube, stride 5); DINOv2-base on the central 182 px of the eight-frame mean with ImageNet normalisation. Features are mean-pooled final tokens (768-d).
-\begin{table}[h]\centering\small
-\caption{Frozen public encoders: raw / own-session calibration / previous-session calibration (acc\,/\,F1) and era probe (chance 57.7).}
+\section{The tracker}
+\paragraph{Settings.} Recent window $K=8$ episodes, reference window $W=30$. Fine statistic: correlation of the 190--370\,\si{\micro\metre} bands (difference of 17-px and 33-px box means of the grey image) of the two window means, over pixels covered by at least two recent and three reference crops and at least 60\,px from every marker of the session. Illumination statistic: mean absolute difference of the two window means after a Gaussian blur with $\sigma=33$\,px. Rule, fixed before evaluation: $\tau_f$ is the 10th percentile and $\tau_i$ the 95th percentile of the statistics over the first hardware state's episodes ($\tau_f=\TrkTauF$, $\tau_i=\TrkTauI$ grey levels); an alarm needs $m=5$ consecutive episodes beyond both; detection then pauses for $W+K$ episodes. Estimate: per-object means with a one-object prior; after an alarm the prior becomes $G$ plus the Gaussian-blurred ($\sigma=33$\,px) difference between the old estimate and $G$. Markers are detected on the first frame of each session's first raw video (\texttt{scripts/build\_session\_dots.py}).
+\paragraph{Spliced streams.} For each public dataset the same statistics are computed with the band and blur converted to its pixel size, on whole images with dark marker blobs masked. Streams consist of $W+K+10$ items of one hardware state followed by $2W$ items of another state (100 streams) or of other recordings of the same state (100 streams). Thresholds use the same percentiles, computed on one unit of each dataset: our S1, SITR Mini 0, FEATS the training split's main unit, and Tactile MNIST gel 1 in its first three runs. A change counts as detected if an alarm falls within $3W$ items. \Cref{tab:roc} shows the trade-off for other percentiles.
+\begin{table}[h]\centering\footnotesize
+\caption{Detector sensitivity, $m=5$: detection rate (\pct) and false alarms per 1{,}000 items when the thresholds are the $q$-th and $(100-q)$-th percentiles. The paper uses $q=10$.}
+\label{tab:roc}
 \begin{tabular}{@{}lcccc@{}}\toprule
-encoder & raw & own & prev. & probe raw$\to$own \\ \midrule
-Sparsh-DINO & \af{\SdinoRawAcc}{\SdinoRawF} & \af{\SdinoOwnAcc}{\SdinoOwnF} & \af{\SdinoPrevAcc}{\SdinoPrevF} & 79.0$\to$62.5 \\
-Sparsh-MAE & \af{\MaeRawAcc}{\MaeRawF} & \af{\MaeOwnAcc}{\MaeOwnF} & \af{\MaePrevAcc}{\MaePrevF} & 76.7$\to$62.4 \\
-Sparsh-I-JEPA & \af{\IjepaRawAcc}{\IjepaRawF} & \af{\IjepaOwnAcc}{\IjepaOwnF} & \af{\IjepaPrevAcc}{\IjepaPrevF} & 76.8$\to$68.7 \\
-DINOv2 & \af{\DinovRawAcc}{\DinovRawF} & \af{\DinovOwnAcc}{\DinovOwnF} & \af{\DinovPrevAcc}{\DinovPrevF} & 71.7$\to$73.1 \\ \bottomrule
+ & $q=1$ & $q=5$ & $q=10$ & $q=20$ \\ \midrule
+ours & \af{\RocOursOneDet}{\RocOursOneFa} & \af{\RocOursFiveDet}{\RocOursFiveFa} & \af{\RocOursTenDet}{\RocOursTenFa} & \af{\RocOursTwentyDet}{\RocOursTwentyFa} \\
+SITR & \af{\RocSitrOneDet}{\RocSitrOneFa} & \af{\RocSitrFiveDet}{\RocSitrFiveFa} & \af{\RocSitrTenDet}{\RocSitrTenFa} & \af{\RocSitrTwentyDet}{\RocSitrTwentyFa} \\
+FEATS & \af{\RocFeatsOneDet}{\RocFeatsOneFa} & \af{\RocFeatsFiveDet}{\RocFeatsFiveFa} & \af{\RocFeatsTenDet}{\RocFeatsTenFa} & \af{\RocFeatsTwentyDet}{\RocFeatsTwentyFa} \\
+Tactile MNIST & \af{\RocTmnistOneDet}{\RocTmnistOneFa} & \af{\RocTmnistFiveDet}{\RocTmnistFiveFa} & \af{\RocTmnistTenDet}{\RocTmnistTenFa} & \af{\RocTmnistTwentyDet}{\RocTmnistTwentyFa} \\ \bottomrule
 \end{tabular}\end{table}
 
-\section{Second unit: Real Tactile MNIST}
-\begin{table}[h]\centering\small
-\caption{Digit from single touches (10-way, per-object pooled; 24 touches per object). Acc\,/\,F1; collapse in parentheses.}
+\section{Adaptation baselines}
+All baselines use the trained single-frame CNNs with heads fitted on raw training embeddings (three head seeds, three encoder seeds). Label-shift correction: EM re-estimation of the class priors from the episode posteriors of the whole test campaign~\cite{saerens2002labelshift}, applied as a logit offset. AdaBN~\cite{li2018adabn}: BatchNorm statistics re-estimated on the test crops of each hardware state, using the true change date; the causal version uses only the crops of the state seen so far. TENT~\cite{wang2021tent}: entropy minimisation of the BatchNorm affine parameters with batch statistics (Adam, lr $10^{-3}$), reset at the change date. Online, it takes one step per episode in recording order on that episode's twelve crops. With mixed batches, the crops of a hardware state are shuffled into batches of 64 for one pass and then predicted with the adapted parameters, which a robot cannot do.
+
+\section{Photometric readings tested and rejected}
+Besides subtraction ($x-\mu_F+\mu_G$) we tested the ratio $x\,\mu_G/\mu_F$, a per-pixel, per-channel location and scale $(x-\mu_F)\,s_G/s_F+\mu_G$, and a per-pixel $3\times3$ colour-response alignment $C_G^{1/2}C_F^{-1/2}(x-\mu_F)+\mu_G$, with $\mu$, $s$ and $C$ the low-pass moments of a session's contacts. This run uses one seed and moment-based state fields, so its subtraction numbers differ slightly from the main text. Plain CNN\,/\,jitter CNN with the previous session as source: subtraction \af{\GngSupSubPrev}{\GngAugSubPrev}, ratio \af{\GngSupRatioPrev}{\GngAugRatioPrev}, location and scale \af{\GngSupLocscalePrev}{\GngAugLocscalePrev}, colour alignment \af{\GngSupColorPrev}{\GngAugColorPrev}. With the campaign's contacts as source: \af{\GngSupSubCamp}{\GngAugSubCamp}, \af{\GngSupRatioCamp}{\GngAugRatioCamp}, \af{\GngSupLocscaleCamp}{\GngAugLocscaleCamp}, \af{\GngSupColorCamp}{\GngAugColorCamp}. The richer models do not help, so the gap left after subtraction is not a per-pixel photometric difference.
+
+\section{Further results on campaign D}
+\begin{table}[h]\centering\footnotesize
+\caption{Other representations on the main split (accuracy; seed 0 unless stated). $\dagger$: eight-frame inputs.}
+\begin{tabular}{@{}lcc@{}}\toprule
+model & raw & $-$ previous session \\ \midrule
+CNN + state-swap objective & \SupSwapFoneRawAcc & \SupSwapFonePrevSAcc \\
+CNN + session-adversarial head (DANN~\cite{ganin2016dann}) & \DannFoneRawAcc & \DannFonePrevAcc \\
+TactSpace replica$^\dagger$ (2 seeds) & \TactSpaceRawAcc & -- \\
+normal-map alignment$^\dagger$ & \NmRawAcc & -- \\
+state swap from scratch, no labels (3 seeds) & \SwapFoneRawSAcc & -- \\
+Sparsh-I-JEPA + adapter (3 seeds) & \IjepaAdAcc & \IjepaAdPrevAcc \\
+\ \ jitter positives instead of state swap & \IjepaAdJitterAcc & \IjepaAdJitterPrevAcc \\
+\ \ without decoys & \IjepaAdNoDecoyAcc & -- \\
+Sparsh-MAE + adapter & \MaeAdAcc & -- \\
+Sparsh-DINO + adapter & \SdinoAdAcc & -- \\
+DINOv2 + adapter & \DinovAdAcc & -- \\ \bottomrule
+\end{tabular}\end{table}
+\paragraph{Number of objects in the estimate.} Estimated from the contacts of $n$ other objects, the state gives (plain CNN\,/\,jitter CNN): $n=1$ \af{\CvSupObjOne}{\CvAugObjOne}, $n=2$ \af{\CvSupObjTwo}{\CvAugObjTwo}, $n=4$ \af{\CvSupObjFour}{\CvAugObjFour}, $n=8$ \af{\CvSupObjEight}{\CvAugObjEight}, $n=19$ \af{\CvSupObjNineteen}{\CvAugObjNineteen}.
+\paragraph{Training-set structure.} On the 13 materials common to every split, the change of unit costs the plain CNN trained on A alone \ThirteenAtoBRaw\ $\rightarrow$ \ThirteenAtoDRaw\pct; trained on A+B, \ThirteenABtoDRaw\pct\ raw and \ThirteenABtoDPrev\pct\ with the previous session's state (jitter CNN \ThirteenABtoDAugRaw\ and \ThirteenABtoDAugPrev); trained on A+B+C, \ThirteenABCtoDRaw\ raw and \ThirteenABCtoDPrev\pct\ with the state. Trained on A and C, the CNN collapses with \TsACSupRawTop\pct\ of episodes in one class.
+\paragraph{A few target labels.} Adding 1, 5 and 10\pct\ of campaign D's episodes to the head's training set gives \SupFoneRawFSOne, \SupFoneRawFSFive\ and \SupFoneRawFSTen\pct\ raw, and \SupFonePrevFSOne, \SupFonePrevFSFive\ and \SupFonePrevFSTen\pct\ with the previous session's state (seed 0). Two materials were replaced by new pieces of the same kind before campaign D (textured rubber, EPDM foam). Without them, the raw jitter CNN scores \SupAugFoneRawEighteen\pct\ (18-way).
+\paragraph{Frames and resolution.} With heads fitted on raw training images and the previous session's state at test time, one frame gives \SupFonePrevRawHeadAcc\pct\ (three seeds), two \SupFtwoPrevAcc, four \SupFfourPrevAcc\ and eight \SupPrevAcc. Within a campaign (train A+C, test B) one frame gives \HoldSupRawAcc\ and eight \HoldFeightRawAcc. Adding single-frame-level noise to the eight-frame inputs does not recover the single-frame result (\NoiseFeightPrevAcc). Halving the resolution does not reduce accuracy (\SupFoneScHalfPrevSAcc), and quartering it costs a little (\SupFoneScQuarterPrevSAcc).
+
+\section{What the encoders know about the hardware}
+\begin{table}[h]\centering\footnotesize
+\caption{Linear probes on frozen features of the 14 materials recorded on both units, tested on held-out materials. Unit: chance 50\pct. Material: 14-way, chance 7\pct.}
+\begin{tabular}{@{}lcccc@{}}\toprule
+& \multicolumn{2}{c}{unit} & \multicolumn{2}{c}{material} \\
+encoder & raw & $-\hat F$ & raw & $-\hat F$ \\ \midrule
+Sparsh-I-JEPA & \ProbeIjepaRawUnit & \ProbeIjepaPrevUnit & \ProbeIjepaRawMat & \ProbeIjepaPrevMat \\
+Sparsh-DINO & \ProbeSdinoRawUnit & \ProbeSdinoPrevUnit & \ProbeSdinoRawMat & \ProbeSdinoPrevMat \\
+Sparsh-MAE & \ProbeMaeRawUnit & \ProbeMaePrevUnit & \ProbeMaeRawMat & \ProbeMaePrevMat \\
+DINOv2 & \ProbeDinovRawUnit & \ProbeDinovPrevUnit & \ProbeDinovRawMat & \ProbeDinovPrevMat \\
+our CNN & \ProbeCnnRawUnit & \ProbeCnnPrevUnit & \ProbeCnnRawMat & \ProbeCnnPrevMat \\
+our CNN + jitter & \ProbeCnnAugRawUnit & \ProbeCnnAugPrevUnit & \ProbeCnnAugRawMat & \ProbeCnnAugPrevMat \\ \bottomrule
+\end{tabular}\end{table}
+
+\section{Public datasets}
+\paragraph{SITR.} The released classification set has 20 objects on seven sensors; sensors 0, 4, 5 and 6 are GelSight Minis. The paper~\cite{sitr2025} reports a 16-object version. Each object and sensor has 800 training and 200 validation images at 224\,px. We use 200 training images per class from the training sensor and 100 validation images per class from every sensor, and average over the four Minis as training sensor. The stream estimate of a sensor is the mean of its 16{,}000 training-split images; the 20- and 100-image versions draw random images from that split. The hardware probe is a logistic regression on the test features with class-stratified five-fold cross-validation. Sparsh, fed one image twice, is outside its training regime here.
+\begin{table}[h]\centering\footnotesize
+\caption{SITR, recognition across the four Minis (20 objects): same Mini\,/\,other Minis, and the hardware probe (chance 25\pct).}
 \begin{tabular}{@{}llccc@{}}\toprule
-event & row & raw & prev.-run cal. & AdaBN per run \\ \midrule
-later days & supervised & \af{\TmLaterSupRawAcc}{\TmLaterSupRawF} (\TmLaterSupRawTop\pct) & \af{\TmLaterSupPrevAcc}{\TmLaterSupPrevF} & \TmLaterSupAdaRunAcc \\
- & frozen Sparsh-I-JEPA & \af{\TmLaterIjepaRawAcc}{\TmLaterIjepaRawF} (\TmLaterIjepaRawTop\pct) & \af{\TmLaterIjepaPrevAcc}{\TmLaterIjepaPrevF} & -- \\
- & label-free swap & \af{\TmLaterSwapRawAcc}{\TmLaterSwapRawF} & \af{\TmLaterSwapPrevAcc}{\TmLaterSwapPrevF} & \TmLaterSwapAdaRunAcc \\
-gel swap & supervised & \af{\TmGelSupRawAcc}{\TmGelSupRawF} (\TmGelSupRawTop\pct) & \af{\TmGelSupPrevAcc}{\TmGelSupPrevF} & \TmGelSupAdaRunAcc \\
- & frozen Sparsh-I-JEPA & \af{\TmGelIjepaRawAcc}{\TmGelIjepaRawF} (\TmGelIjepaRawTop\pct) & \af{\TmGelIjepaPrevAcc}{\TmGelIjepaPrevF} & -- \\
- & label-free swap & \af{\TmGelSwapRawAcc}{\TmGelSwapRawF} & \af{\TmGelSwapPrevAcc}{\TmGelSwapPrevF} & \TmGelSwapAdaRunAcc \\ \bottomrule
+encoder & reading & same & other & probe \\ \midrule
+DINOv2 & raw & \SitrDinovRawSame & \SitrDinovRawIntra & \SitrDinovRawProbe \\
+ & $-$ background image & \SitrDinovBgSame & \SitrDinovBgIntra & \SitrDinovBgProbe \\
+ & $-$ mean of 20 images & \SitrDinovStreamTwentySame & \SitrDinovStreamTwentyIntra & \SitrDinovStreamTwentyProbe \\
+ & $-$ mean of 100 images & \SitrDinovStreamHundredSame & \SitrDinovStreamHundredIntra & \SitrDinovStreamHundredProbe \\
+ & $-$ mean of all images & \SitrDinovStreamSame & \SitrDinovStreamIntra & \SitrDinovStreamProbe \\
+Sparsh-I-JEPA & raw & \SitrIjepaRawSame & \SitrIjepaRawIntra & \SitrIjepaRawProbe \\
+ & $-$ mean of all images & \SitrIjepaStreamSame & \SitrIjepaStreamIntra & \SitrIjepaStreamProbe \\
+our CNN (trained) & raw & \SitrCnnRawSame & \SitrCnnRawIntra & \SitrCnnRawProbe \\
+ & $-$ mean of all images & \SitrCnnStreamSame & \SitrCnnStreamIntra & \SitrCnnStreamProbe \\ \bottomrule
+\end{tabular}\end{table}
+\paragraph{FEATS.} Samples are 240$\times$320 images with finite-element force maps. The training set is dominated by one sensor, and the two held-out splits are another sensor with its old gel and with a new gel. A sample's sensor is taken from the nearest no-contact template by the image periphery, which identifies the sensor but not the gel, so the background reading uses the sensor-level mean of the no-contact frames. The regressor is our encoder stem on the full image with a two-layer head on $\log(1+|f_z|)$, trained for eight epochs. Mean absolute error of $|f_z|$ (N), validation\,/\,test\,/\,unknown indenters\,/\,other sensor old gel\,/\,new gel: raw \FeatsRawValMae\,/\,\FeatsRawTestMae\,/\,\FeatsRawUnknownMae\,/\,\FeatsRawOldGelMae\,/\,\FeatsRawNewGelMae; no-contact frame \FeatsBgValMae\,/\,\FeatsBgTestMae\,/\,\FeatsBgUnknownMae\,/\,\FeatsBgOldGelMae\,/\,\FeatsBgNewGelMae; stream \FeatsStreamValMae\,/\,\FeatsStreamTestMae\,/\,\FeatsStreamUnknownMae\,/\,\FeatsStreamOldGelMae\,/\,\FeatsStreamNewGelMae.
+\paragraph{Real Tactile MNIST.} 320$\times$240 stills, about \SI{58}{\micro\metre}/px; 24 runs from September 27 to October 16, 2023, with one gel swap.
+\begin{table}[h]\centering\footnotesize
+\caption{Real Tactile MNIST: digit from single touches (10-way), accuracy\,/\,F1, with the share of the most predicted class in parentheses.}
+\begin{tabular}{@{}llccc@{}}\toprule
+test & model & raw & $-$ previous run & AdaBN per run \\ \midrule
+later runs & supervised & \af{\TmLaterSupRawAcc}{\TmLaterSupRawF} (\TmLaterSupRawTop) & \af{\TmLaterSupPrevAcc}{\TmLaterSupPrevF} & \TmLaterSupAdaRunAcc \\
+ & Sparsh-I-JEPA & \af{\TmLaterIjepaRawAcc}{\TmLaterIjepaRawF} (\TmLaterIjepaRawTop) & \af{\TmLaterIjepaPrevAcc}{\TmLaterIjepaPrevF} & -- \\
+gel swap & supervised & \af{\TmGelSupRawAcc}{\TmGelSupRawF} (\TmGelSupRawTop) & \af{\TmGelSupPrevAcc}{\TmGelSupPrevF} & \TmGelSupAdaRunAcc \\
+ & Sparsh-I-JEPA & \af{\TmGelIjepaRawAcc}{\TmGelIjepaRawF} (\TmGelIjepaRawTop) & \af{\TmGelIjepaPrevAcc}{\TmGelIjepaPrevF} & -- \\ \bottomrule
 \end{tabular}\end{table}
 
-\section{Force and contact details}
-Marker grids are detected on the bare gel at native resolution (63--64 dots, the Mini's 7$\times$9 grid), matched to each contact frame's dots within 0.6 grid spacings, and summarised by the affine fit of the displacement field (divergence, mean displacement, net shear). A per-dot learned head (MLP on the 126-d displacement field) gives no gain over the affine summary and breaks across the gel swap (the new gel's dot order differs). Stale \emph{unloaded} references for appearance-based force: $R^2$ 0.09 (fresh) vs $-$1.9 (previous session) vs $-$13 (older); for marker geometry the force ranking survives any same-gel reference (Spearman 0.65--0.67). Contact: heads trained on the seven lead-in sessions (lead-in and pre-contact frames = no contact; onset and contact frames = contact), tested on the other 13 sessions' contact frames and 620 bare-gel frames; blank-differencing threshold fitted on the lead-in sessions.
+\section{Force and contact}
+\begin{figure}[h]\centering
+\includegraphics[width=\linewidth]{fig/fig_force.pdf}
+\caption{$R^2$ of log normal force on September--October for models trained on June--July.}
+\end{figure}
+Marker grids are detected on the bare gel at native resolution (63--64 dots, the Mini's $7\times9$ grid), matched to each contact frame's dots within 0.6 grid spacings, and summarised by the affine fit of the displacement field (divergence, mean displacement, net shear). Within a session the divergence follows the Nano17 force at Spearman \ForceWithinRho. Fitted on the first 13 sessions of campaign D, the linear map predicts the last 7 at $R^2$ \ForceGeomFreshR\ ($r$ \ForceGeomFreshC) with a fresh bare-gel grid and \ForceGeomPrevR\ ($r$ \ForceGeomPrevC) with the previous session's grid. A new gel keeps the force ranking but changes the scale from displacement to force, so absolute force needs one scale calibration per gel. Contact: detectors are trained on the seven lead-in sessions (lead-in and pre-contact frames are no contact, onset and contact frames are contact) and tested on the other sessions' contact frames and bare-gel frames. Referencing the embedding to the session's own bare gel gives \ContactRefSpec\pct\ specificity at \ContactRefRecall\pct\ recall. Thresholded raw differencing against the bare gel gives \ContactBlankdiffSpecMin--\ContactBlankdiffSpecMax\pct\ specificity, depending on the lead-in frames available to fit its threshold.
 
 \section{Measurement details}
-Band-pass: box filters of 3 and 33 px (34--370\,\si{\micro\metre}); marker blobs of each session's own field masked (radius 30 px). Reliability of a band = correlation of two disjoint $k$-frame means of the same crop (120 episodes). Codec-row share: power at the 8/16-row harmonics of the marker-free session field over its total band power (median 3.4\pct\ vs 4.7\pct\ of the spectrum). Real Tactile MNIST: 320$\times$240 stills as delivered; bands 3--7 and 7--15 px; one run's touches at random cell positions.
+The signature uses pixels covered by at least three crops of the partner field and at least 60\,px from every marker of the session. With the marker surroundings included, the same-hardware medians are about 0.05 higher and the cross-hardware floor rises from \HwFarOtherUnit\ to \HwOtherUnit, which is inpainting residue. Partner categories follow the hardware timeline: own session (episode left out), another object the same day, the same unit and gel on another day within a month, the same unit and gel three months apart (July 10--13 against September 28 to October 9), the other unit, and the other gel of the same unit. Real Tactile MNIST: bands of 3--7\,px, its own run (object left out), other runs of the same day, other days of the same gel, and the other gel.
 
+{\small
+\bibliographystyle{ieeenat_fullname}
+\bibliography{main}
+}
 \end{document}

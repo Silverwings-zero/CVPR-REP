@@ -1,49 +1,40 @@
 \section{Reading touch relative to the sensor's state}
 \label{sec:method}
+\label{sec:tracker}
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\linewidth]{fig/fig_method.pdf}
-  \caption{\textbf{State swap on real data.} A June contact $x$, its session's state field $F_s(p)$ (the position-wise mean of the session's other contacts), the residual $r=x-F_s$, the same contact re-rendered under a July session's state (the positive), and a decoy: another surface's residual placed under this crop's state and position. Bottom: the 190--370\,\si{\micro\metre} band. The encoder must match $x$ to $x'$ and not to the decoy; only the surface distinguishes them.}
-  \label{fig:method}
-\end{figure*}
-
-We write a contact crop at frame position $p$, taken with hardware state $h$, as $x = F_h(p) + r$: the state, a fixed image of the unit and gel, plus the touch. \Cref{sec:signature} established that $F_h$ is shared by every object imaged with that hardware, stable over months of use, and replaced wholesale when the unit or the gel is. A robot that reads touch should therefore keep an estimate of $F_h$ for the hardware it is using, notice when that hardware changes, and read every image relative to the current estimate. Algorithm~\ref{alg:tracker} is that procedure. It uses only the frames the sensor produces anyway; it needs no labels, no calibration object and no bare-gel frame, although it uses a bare-gel frame when the gripper is open.
+We write a contact crop at frame position $p$, taken under hardware state $h$, as $x = F_h(p) + r$: the state, a fixed image of the unit and gel, plus the touch. \Cref{sec:signature} showed that $F_h$ is shared by every object imaged with that hardware, stable over months of use, and replaced when the unit or the gel is replaced. A robot that reads touch should therefore keep an estimate $\hat F$ of the current state, notice when the hardware changes, and read every image relative to the estimate. \Cref{alg:tracker} does this with the frames the sensor produces anyway. It needs no labels, no calibration object and no bare-gel frame.
 
 \begin{algorithm}[t]
-\caption{The state tracker, run on the sensor's own stream}
+\caption{The state tracker, run on the robot's own stream}
 \label{alg:tracker}
 \begin{algorithmic}[1]
-\Require training mean $G(p)$; thresholds $\tau_f, \tau_i$, persistence $m$, window $W$
-\State epoch accumulators $A(p)\!\gets\!0$, $n(p)\!\gets\!0$; window $\mathcal{W}\!\gets\!\emptyset$; run $\gets 0$
-\For{each contact crop $x$ at position $p$ (any object, no label)}
-  \State $\hat F \gets (A + kG)/(n + k)$ \Comment{reading estimate, $k$ pseudo-counts}
-  \State $\hat R \gets$ mean of $\mathcal{W}$ at $p$ \Comment{detection reference: the last $W$ episodes}
-  \State $c \gets$ corr$\big(\text{band}(x), \text{band}(\hat R)\big)$ away from markers; \ $\delta \gets \|\text{lowpass}(x) - \text{lowpass}(\hat R)\|_1$
-  \State run $\gets$ run $+1$ if $c < \tau_f$ and $\delta > \tau_i$ else $0$
+\Require training mean $G(p)$; thresholds $\tau_f,\tau_i$ from the training data; persistence $m$; windows $K, W$
+\State prior $P \gets G$; object means $\{F_o\} \gets \emptyset$; run $\gets 0$
+\For{each episode: contact crops $x_j$ at positions $p_j$ of object $o$ (no label)}
+  \State $\hat F(p) \gets \big(P(p) + \sum_{o'} F_{o'}(p)\big) / \big(1 + n(p)\big)$ \Comment{$n(p)$: objects covering $p$}
+  \State \textbf{read} $x'_j \gets x_j - \hat F(p_j) + G(p_j)$ \Comment{to the encoder and head}
+  \State push the episode into the recent window $\mathcal R$ (last $K$); its oldest episode moves to the reference window $\mathcal Q$ (the $W$ before)
+  \State $c \gets \text{corr}\big(\text{band}(\bar{\mathcal R}), \text{band}(\bar{\mathcal Q})\big)$ away from markers; \ $\delta \gets \big|\text{low}(\bar{\mathcal R}) - \text{low}(\bar{\mathcal Q})\big|$
+  \State run $\gets$ run $+1$ if $c<\tau_f$ and $\delta>\tau_i$ else $0$
   \If{run $\ge m$} \Comment{the hardware has changed}
-    \State $A, n \gets 0$; re-insert the last $m$ episodes; run $\gets 0$; hold detection for $W$ episodes
+    \State $P \gets G + \text{low}(\hat F - G)$; $\{F_o\} \gets \emptyset$; run $\gets 0$; pause detection for $W{+}K$ episodes
   \EndIf
-  \State \textbf{read} $x' \gets x - \hat F(p) + G(p)$ \Comment{to the encoder and head}
-  \State $A(p) \mathrel{+}= x$; $n(p) \mathrel{+}= 1$; push $x$ to $\mathcal{W}$ (drop the oldest beyond $W$)
+  \State add the crops $x_j$ to the running mean $F_o$ of object $o$
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
 \paragraph{Estimate.}
-The estimate is the position-wise mean of the contacts seen since the last hardware change, shrunk toward the training mean $G$ where few contacts cover a pixel. Because every object imprints the gel somewhere else, the objects average out and the hardware remains: this is the retrospective flat-field of microscopy~\cite{singh2014illumination,peng2017basic}, taken from a robot's contact stream. Its bias is the mean imprint of the objects it averages, so the estimate improves with the number of distinct objects (\cref{sec:material}), and the session's own contacts, which share one object, are the worst source.
+The estimate is the position-wise mean over the objects seen since the last hardware change. Each object first averages its own contacts, and the objects then count equally, with the prior counting as one more object. Every object imprints the gel in a different way, so the imprints average out and the hardware remains. This is the retrospective flat-field of microscopy~\cite{singh2014illumination,peng2017basic}, taken from a robot's stream. Its error is the mean imprint of the objects it contains, so a single object is a poor estimate of the state and several objects are a good one (\cref{sec:sources}). We weight by object because the first object after a change would otherwise dominate the estimate through its many contacts. In our data each session holds one object, so the object is the session. A robot knows when it moves to a new object from its own task. After a change, the prior keeps the smooth illumination part of the old estimate and drops its fine pattern. The fine pattern belongs to the replaced hardware, while a gel replacement leaves the LEDs and the camera in place.
 
 \paragraph{Detection.}
-Two statistics compare each new episode with the last $W$ episodes: the correlation of the fine band (190--370\,\si{\micro\metre}, away from the markers) with the reference, and the distance of the low-frequency illumination field. A hardware change is declared only when both leave the same-hardware range for $m$ consecutive episodes. Either statistic alone fails: materials with a strong texture of their own (canvas, the back of leather) have a low fine-band correlation on any hardware, and the illumination field occasionally jumps within a hardware state after a power cycle; the two never fail together. The thresholds are set once, on the first hardware state of the training data, and never touched again.
+The detector compares the mean image of the last $K\!=\!8$ episodes with the mean of the $W\!=\!30$ episodes before them, using two statistics. The first is the correlation of their fine bands (190--370\,\si{\micro\metre}, at least 60\,px from any marker), which is high on the same hardware and drops when the cartridge's pattern changes. The second is the mean absolute difference of their smooth illumination fields (Gaussian, $\sigma\!=\!33$\,px). Either statistic alone raises false alarms. Materials with a strong texture of their own, such as canvas, lower the fine-band correlation on any hardware, and the illumination field moves between sessions of the same hardware. A change is declared only when both statistics leave the same-hardware range for $m\!=\!5$ consecutive episodes. The thresholds follow a fixed rule that we set before evaluating: the 10th percentile of the correlation and the 95th percentile of the illumination distance over the episodes of the first hardware state, which is training data. For the public datasets the same rule is applied to one unit of each dataset.
 
 \paragraph{Reading.}
-The image is read relative to the current estimate: $x' = x - \hat F(p) + G(p)$. The encoder is trained on raw images; the classifier head is fitted on training images read relative to their own previous session, so that it sees one transform at both ends. Training the encoder on state-subtracted inputs is worse in every fold (\cref{sec:timeorstate}): the subtraction belongs at test time, where it is needed.
+Each image is read as $x' = x - \hat F(p) + G(p)$ and passed to the encoder and the classifier head. The encoder is trained on raw images. The head is fitted on training images read in the same way, each relative to its own previous session, so that it sees the same transform at training and test time. Dividing by the estimate instead of subtracting it gives the same accuracy, and richer per-pixel photometric alignments are worse (supplement). The smooth illumination part of the estimate does most of the correction, and the fine pattern is what makes changes detectable (\cref{sec:sources}).
 
-\paragraph{Conditions.}
-Three conditions, each measured in \cref{sec:exp}, delimit the procedure. The state is additive: dividing by the estimate instead of subtracting it, or aligning the per-pixel colour response of the hardware to the training hardware, does no better. The estimate needs several objects: one is biased by its own imprint, twenty are not. The procedure covers rendering changes and not mechanical ones: a replaced gel changes how the surface deforms as well as how it is imaged, and no image-space correction recovers it; force must then be read as marker displacement against the unloaded gel.
+\paragraph{Label-free adaptation of a frozen encoder.}
+The same decomposition gives a training signal for adapting a frozen foundation model to the state without class labels. Each training crop is re-rendered under another session's state, $x' = x - F_s(p) + F_{s'}(p)$, and a small MLP on the frozen features (768--768--256) is trained with InfoNCE~\cite{oord2018cpc,chen2020simclr} to match $x$ with $x'$ and not with a decoy, which is another surface's residual placed under the anchor's own state and position. The adapter uses no material labels. It does use the session identity of each crop, and in data with one object per session the session also identifies the object.
 
-\paragraph{Learning without labels.}
-Where a frozen foundation model is to be adapted, the same quantity trains an adapter with no labels and no data from the new hardware: each training contact is re-rendered under another session's state, $x' = r + F_{s'}(p)$, and the adapter must match $f(x)$ to $f(x')$ (InfoNCE~\cite{oord2018cpc,chen2020simclr}) and not to a decoy, another surface's residual placed under the anchor's own state (\cref{fig:method}). Batches are drawn from a few sessions so that negatives share the anchor's state. Sessions and positions are recording metadata; no material label enters.
-
-\paragraph{Geometry.}
-Normal force and contact are read against the \emph{unloaded} gel: the marker grid detected on the bare gel at native resolution is matched to the grid in a contact frame, and the affine summary of the displacement field (divergence, mean displacement, net shear) is mapped to force by a linear map; a contact detector operates on $f(x) - f(\text{bare gel})$. The force reference changes with the gel (a new gel has a new stiffness), the appearance state with the unit and the gel.
+\paragraph{Force and contact.}
+The state does not cover mechanics. For normal force we read the marker grid against the unloaded gel: the grid detected on a bare-gel frame at native resolution is matched to the grid in the contact frame, and three affine statistics of the displacement field (divergence, mean displacement and net shear) are mapped linearly to log force. Contact is detected from an embedding referenced to the session's bare gel.
