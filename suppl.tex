@@ -133,6 +133,9 @@ our CNN + jitter & \ProbeCnnAugRawUnit & \ProbeCnnAugPrevUnit & \ProbeCnnAugRawM
 \end{tabular}\end{table}
 
 \section{Public datasets}
+\paragraph{Across GelSight Minis without a confound.}
+On SITR's standard protocol, where every class appears on every Mini, a head trained on one Mini scores \SitrDinovRawIntra\pct\ on the other three raw, \SitrDinovBgIntra\pct\ with SITR's background image subtracted, and \SitrDinovStreamIntra\pct\ relative to the mean of 16{,}000 unlabelled images of each sensor. The mean of 100 random images gives \SitrDinovStreamHundredIntra\pct, and the mean of 20 is worse than no correction (\SitrDinovStreamTwentyIntra\pct). SITR itself needs 18 calibration presses per sensor and reports 90\pct\ on its 16-object version. On FEATS, no image-space reading brings normal force across units or gels close to the training error (below).
+
 \paragraph{SITR.} The released classification set has 20 objects on seven sensors; sensors 0, 4, 5 and 6 are GelSight Minis. The paper~\cite{sitr2025} reports a 16-object version. Each object and sensor has 800 training and 200 validation images at 224\,px. We use 200 training images per class from the training sensor and 100 validation images per class from every sensor, and average over the four Minis as training sensor. The stream estimate of a sensor is the mean of its 16{,}000 training-split images; the 20- and 100-image versions draw random images from that split. The hardware probe is a logistic regression on the test features with class-stratified five-fold cross-validation. Sparsh, fed one image twice, is outside its training regime here.
 \begin{table}[h]\centering\footnotesize
 \caption{SITR, recognition across the four Minis (20 objects): same Mini\,/\,other Minis, and the hardware probe (chance 25\pct).}
@@ -164,6 +167,25 @@ gel swap & supervised & \af{\TmGelSupRawAcc}{\TmGelSupRawF} (\TmGelSupRawTop) & 
 We use the HCT frames of TVL~\cite{tvl2024} that carry the material labels and the released few-shot split of \cite{mohsan2026language}: \HctFrames\ frames from \HctSessions\ sessions on \HctDays\ days, \HctClasses\ material classes, native $240\times320$ frames cropped to $238\times322$ for DINOv2 ViT-B/14. \HctTestSessInTrain\ of the \HctTestSessions\ test sessions of the released split also appear in its training set. Session protocol: five folds over sessions. Day protocol: each day held out in turn, classes absent from the training days dropped, days with fewer than 20 test frames or one class skipped. Readings: raw, background ($x - B_s + \bar B$ with the session's released no-contact frame $B_s$), and stream, the per-object running mean of Algorithm~1 within the test day (sessions in time order, each session one object, the training mean as a one-object prior), with training frames read relative to the mean of the other training sessions of their day. Heads: MLPs with three seeds, macro accuracy over classes. Raw\,/\,background accuracy is \HctPubRawAcc\,/\,\HctPubBgAcc\ on the published split and \HctSessRawAcc\,/\,\HctSessBgAcc\ with sessions held out. With days held out, raw\,/\,background\,/\,stream give \HctDayRawAcc\,/\,\HctDayBgAcc\,/\,\HctDayStreamAcc\ (top-class share \HctDayRawTop, \HctDayBgTop\ and \HctDayStreamTop\pct). The no-contact frame alone, through a logistic regression on DINOv2 features left out one session at a time, gives the material at \HctProbeLoso\pct\ when sessions of the same day are in training and \HctProbeOtherDays\pct\ when they are not (most frequent class \HctProbeMajority\pct).
 
 \section{The detector on our stream}
+\begin{table}[h]
+  \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
+  \caption{\textbf{Detecting a change of hardware} with thresholds fixed in advance (10th and 95th percentiles of the two statistics on one unit of each dataset, $m\!=\!5$). Streams splice recordings of one unit or gel onto another (100 streams) or onto other recordings of the same hardware (100 streams). SITR: changes between two Minis only. Delay and false alarms are counted in the dataset's items.}
+  \label{tab:detect}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}llccc@{}}
+    \toprule
+    dataset & changes & detected & delay & false alarms \\
+    & & (\pct) & (median) & per 1{,}000 \\
+    \midrule
+    ours, whole frames (episodes) & unit, gel & \TeOursFramesDet & \TeOursFramesDelay & \TeOursFramesFa \\
+    ours, material crops (episodes) & unit, gel & \TeOursDet & \TeOursDelay & \TeOursFa \\
+    SITR~\cite{sitr2025} (images) & Mini to Mini & \TeSitrMiniDet & \TeSitrMiniDelay & \TeSitrFa \\
+    FEATS~\cite{feats2025} (images) & unit, gel & \TeFeatsDet & \TeFeatsDelay & \TeFeatsFa \\
+    Tactile MNIST~\cite{tactilemnist2025} (touches) & gel & \TeTmnistDet & \TeTmnistDelay & \TeTmnistFa \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{fig/fig_tracker.pdf}
