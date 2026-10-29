@@ -23,5 +23,5 @@ Our contributions are:
   \item A four-month measurement of the hardware state of a VBTS. The state is present in the bare gel, stable over months of use, and replaced with the unit or the gel, so a dataset's images record its hardware history.
   \item An account of how classifiers trained with one object per session fail after a change of hardware, confirmed by injecting the same structure into a public dataset. The classes recorded under the new state absorb the test set.
   \item Two label-free tools that break the tie between class and state: state augmentation during training, and a tracker that estimates the state from the robot's own contacts, detects hardware changes, and reads each image relative to the estimate. We test them with supervised and frozen foundation encoders on every campaign of our data, in a reversed split fixed before training, and on three public datasets, and we show where they stop working.
-  \item A four-month VBTS dataset with two units, three gels, 20 materials, co-recorded force, bare-gel frames and a leave-one-campaign-out protocol.
+  \item A four-month VBTS dataset with two units, three gels, 20 materials, co-recorded force, bare-gel frames and a leave-one-campaign-out protocol, which we release with the code.
 \end{itemize}
