@@ -82,3 +82,23 @@ seeds, with a success bar of +5 points and an interval that excludes zero.
 1. Were D's canvas, fleece, silk and ceramic the same pieces, the same side and the same orientation as in June/July?
 2. Was June's "paper" the same sheet as resume paper?
 3. Was lubricant applied in June when no pause was logged?
+
+## Progress (2026-10-30)
+
+The pooled protocol is in place: 55 cross-hardware session tests (campaign D, campaign C, and the reversed split),
+session bootstrap intervals, and paired comparisons on matched sessions (`HapTeleop/scripts/xp/`). All numbers below
+are seed 0 unless stated, and none is final until three seeds are in.
+
+- **Recipe.** Geometric augmentation lifts the from-scratch CNN from 27.0 to 33.3 pooled. Reading test images
+  relative to a low-pass estimate of the new state's illumination (`test_lp`) adds about ten points (43.9 pooled,
+  54.7 on D). Reading training images as well hurts, because the training estimate of unit 2 comes from only three
+  objects. Larger central views (384 px) collapse, because they show more of the hardware pattern.
+- **Alignment with the new hardware's unlabelled stream (E3/E5).** A domain adversary (DANN) on top of the recipe,
+  read with `test_lp`, gains 9.2 points over the recipe on matched sessions (interval +3.2 to +15.0). CORAL gains
+  7.3, and the same 7.3 when it sees only the first half of each new state's sessions. The gain sits on the reversed
+  split (38.8 to 56.0); on D the illumination reading alone already removes most of the shift. Alignment ends the
+  collapse: the share of test images in the most predicted class falls from 28 to about 10 percent.
+- **Running.** Seeds 1 and 2 on all three folds; a hardware-state adversary over every state, an
+  information-maximisation term against the collapse, and a class-conditional session adversary; and the SITR tie
+  (from-scratch CNN, all 12 ordered Mini pairs) with alignment against the new Mini's unlabelled images, the case
+  the additive readings could not repair.
