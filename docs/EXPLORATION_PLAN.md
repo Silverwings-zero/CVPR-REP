@@ -181,3 +181,12 @@ CVPR method papers built the same way, from known parts plus a new problem and o
 - **CamStyle** (Zhong et al., CVPR 2018). An off-the-shelf CycleGAN is used against camera-to-camera style shift in re-identification.
 
 Claim pattern for our paper: the problem and protocol are new. The method's design follows from the problem: the state reading removes the smooth hardware look, alignment uses the robot's own post-change touches, and grouped confidence averages before asking for confidence. Alignment and the IM terms are "adapted from" DANN and SHOT, and grouped confidence is credited to MEMO's marginal entropy. Each part is justified by an ablation row. The baselines are DANN alone and DANN plus per-touch IM, which together amount to SHOT-IM-style adaptation, so the paper beats the standard recipes rather than merely using them.
+
+## Baselines (2026-11-01): newer methods for the comparison table
+
+Until today, the only methods run on the pooled protocol were DANN (2015) and CORAL (2016). The comparison now uses newer published methods. Each matches its official code, uses its paper's default hyperparameters, and runs on the same encoder, budget and unlabelled touches as our method.
+
+- **Retraining with the new hardware's unlabelled touches**, the same information our full method uses: CDAN+E (NeurIPS 2018), MCC (ECCV 2020), SDAT (ICML 2022, CDAN with MCC and a sharpness-aware classification step) and MIC (CVPR 2023, on SDAT). UDA-Bench (Kalluri et al., ECCV 2024) found that newer methods often do no better than CDAN under a standardised setup, which is why CDAN stays in.
+- **Adapting on the stream at test time, without retraining:** test-time BatchNorm, Tent (ICLR 2021), SAR (ICLR 2023), RoTTA (CVPR 2023) and DeYO (ICLR 2024). The stream is in recording order, so each batch holds one material. RoTTA was designed for exactly that kind of stream. The model is reset at each hardware change, which is the same knowledge our reading uses.
+- **Fairness:** each retraining baseline gets the two trade-off weights we tried for our own method (1.0 and 0.3) on seed 0 and keeps its better one for seeds 1 and 2. Every baseline is also scored with our low-pass reading added. The table groups methods by the information they use. Test-time methods are compared with our reading alone, which also needs no training. Retraining methods are compared with the full method.
+- **Code and runs:** `scripts/xp/train.py` (flags `--uda cdan`, `--mcc`, `--sam`, `--mic`) and `scripts/xp/tta.py`. Cluster wave 6 (job 13653737).
