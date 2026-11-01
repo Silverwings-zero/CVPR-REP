@@ -158,3 +158,26 @@ episode accuracy; differences are paired on matched sessions against the full me
 - **Running.** Encoder generality: ResNet-50 and ConvNeXt-T (pretrained, fine-tuned) on the tube view, recipe against
   full method, three folds and three seeds on the local GPU; DINOv2-B the same on the cluster (it needs more than
   12 GB).
+
+## Positioning (2026-11-01): what is borrowed, what is ours, and CVPR precedents
+
+Each part of the method, with the published work it must be credited to:
+
+| Part | Source | How close our version is |
+|---|---|---|
+| Alignment with an adversary | DANN (Ganin and Lempitsky, ICML 2015; JMLR 2016) | The same loss. A binary old-vs-new-hardware classifier on the features, with gradient reversal. Only the ramp schedule differs. |
+| Per-touch confidence and spread | Information maximisation (Krause et al., NeurIPS 2010; Hu et al., ICML 2017), used for adaptation by SHOT (Liang et al., ICML 2020) | The same two terms as SHOT's IM loss. This is the ablation row "per-touch instead of grouped". |
+| Grouped confidence | Marginal entropy over augmented copies of one test image, from MEMO (Zhang, Levine and Finn, NeurIPS 2022). The batch-level IM family includes BNM (Cui et al., CVPR 2020). | The same functional form as MEMO: the entropy of an averaged prediction. Our groups are several real touches from the new hardware, not synthetic copies of one image. It is used during training on the unlabelled stream and paired with a spread term across groups. MEMO is a must-cite. The shuffle control shows that random groups do about as well, so the claim is "average before asking for confidence", not "the robot knows which touches share an object". |
+| Test-time low-pass reading | Its kin is FDA (Yang and Soatto, CVPR 2020): low-frequency image content carries sensor and illuminant style. Classic flat-field correction is the same family. | Ours. Each hardware state's look is estimated from the unlabelled mean images of the sessions recorded before it on that hardware. Only its smooth part (Gaussian, sigma 33 px) is subtracted at test time, without training. |
+| Framing and protocol | — | Ours. A hardware change is treated as a shortcut problem, and the robot's own unlabelled touches after the change serve as the adaptation signal. The protocol pools cross-hardware sessions, with strata and paired bootstraps. |
+
+CVPR method papers built the same way, from known parts plus a new problem and one or two new pieces (all checked against the papers):
+
+- **MM-SADA** (Munro and Damen, CVPR 2020). It uses the DANN adversary, with a gradient reversal layer per modality, against kitchen-to-kitchen shift in egocentric video. Its new part is a self-supervised signal from the data's own structure: whether RGB and flow come from the same action. In its ablation, the known adversary gives +3.9 of the +4.8 total. This is the closest structural precedent.
+- **ADVENT** (Vu et al., CVPR 2019). It combines entropy minimisation (Grandvalet and Bengio 2005) with adversarial training. One of its two methods is plain entropy minimisation applied per pixel.
+- **FDA** (Yang and Soatto, CVPR 2020). The core is a training-free low-frequency spectrum swap. The rest is a known entropy penalty and self-training.
+- **BNM** (Cui et al., CVPR 2020). It is one modified confidence-and-diversity loss, justified by analysis.
+- **Complete & Label** (Yi, Gong and Funkhouser, CVPR 2021). The domain gap comes from changing the sensor hardware (LiDAR beam patterns). The contribution is identifying that gap and canonicalising it away.
+- **CamStyle** (Zhong et al., CVPR 2018). An off-the-shelf CycleGAN is used against camera-to-camera style shift in re-identification.
+
+Claim pattern for our paper: the problem and protocol are new. The method's design follows from the problem: the state reading removes the smooth hardware look, alignment uses the robot's own post-change touches, and grouped confidence averages before asking for confidence. Alignment and the IM terms are "adapted from" DANN and SHOT, and grouped confidence is credited to MEMO's marginal entropy. Each part is justified by an ablation row. The baselines are DANN alone and DANN plus per-touch IM, which together amount to SHOT-IM-style adaptation, so the paper beats the standard recipes rather than merely using them.
