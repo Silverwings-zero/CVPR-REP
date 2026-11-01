@@ -140,3 +140,21 @@ episode accuracy; differences are paired on matched sessions against the full me
   later days of the same gel), so every variant sits at chance.
 - Running: per-touch confidence seeds 1-2, causal-stream seeds, the random-group objective on SITR with three seeds,
   group sizes.
+
+## Progress (2026-11-01): the method's evidence with three seeds
+
+- **Grouped against per-touch confidence (three seeds, 55 sessions).** Per-touch confidence on top of alignment is
+  2.4 points below grouped confidence (interval −4.8 to −0.3) and adds nothing over alignment alone (−0.2). Grouping
+  is the form of the confidence objective that pays on our data. Random groups (all three folds, seed 0) and groups
+  of 4 or 16 touches instead of 8 (seed 0) are all within a point of grasp groups: the averaging matters, the group
+  identity and size do not.
+- **Sessions the stream never saw (three seeds, all three folds, 28 late sessions).** Aligning to the first half of
+  each new state's sessions and scoring only the second half: +9.8 over the recipe (interval +4.3 to +15.8), against
+  +11.9 with the full stream; the difference (−2.0, −4.9 to +0.2) is not significant.
+- **SITR with three seeds (12 ordered Mini pairs).** The full method (alignment with grouped confidence on random
+  groups of the new Mini's unlabelled images) raises accuracy on the classes learned on the old Mini from 12.8 to
+  72.0, better in all 12 pairs. Grouped confidence adds 15.3 over alignment alone (+9.9 to +21.1, 12 of 12 pairs).
+  Grouped and per-image confidence tie on SITR (−0.1), so the advantage of grouping is specific to our data.
+- **Running.** Encoder generality: ResNet-50 and ConvNeXt-T (pretrained, fine-tuned) on the tube view, recipe against
+  full method, three folds and three seeds on the local GPU; DINOv2-B the same on the cluster (it needs more than
+  12 GB).
