@@ -102,3 +102,41 @@ are seed 0 unless stated, and none is final until three seeds are in.
   information-maximisation term against the collapse, and a class-conditional session adversary; and the SITR tie
   (from-scratch CNN, all 12 ordered Mini pairs) with alignment against the new Mini's unlabelled images, the case
   the additive readings could not repair.
+
+## Progress (2026-10-31) and the story decision
+
+**Decision (data owner, 2026-10-31): method paper.** The method is ours as a whole: the framing (a hardware change
+is a shortcut problem, and the robot's own unlabelled touches after the change are the signal to adapt with), the
+test-time low-pass reading, and the grouped confidence objective. Its alignment and confidence losses are adapted
+from unsupervised domain adaptation (DANN; information maximisation as in SHOT) and are cited as such, with an
+ablation of every part. HCT is a different sensor (DIGIT) whose day shift is mostly a change of objects and of the
+material mix, not of the sensor's look, so it is out of scope; one limitation sentence states that.
+
+Ablation on the pooled protocol (55 cross-hardware sessions, three seeds unless stated, numbers are cross-hardware
+episode accuracy; differences are paired on matched sessions against the full method):
+
+| Pipeline | Pooled | Against the full method |
+|---|---|---|
+| Recipe without the low-pass reading | 31.9 | −21.4 |
+| + low-pass reading | 42.3 | −11.0 |
+| + alignment with the new hardware's stream | 51.1 | −2.2 (interval −5.7 to +1.1) |
+| + grouped confidence (full method) | 53.3 | |
+| Full method without the low-pass reading | 49.0 | −4.3 (−7.6 to −1.2) |
+| Full method without alignment | 50.4 | −2.9 (−5.8 to −0.7) |
+| Per-touch instead of grouped confidence (seed 0) | 52.2 | −1.1 (not significant) |
+| Random groups instead of grasps (seed 0, D and reversed split) | 55.0 | −0.6 (not significant) |
+
+- The full method gains 11.0 over the recipe (interval +5.4 to +17.0). Alignment and grouped confidence each give
+  most of that gain alone and do not add up; removing either from the full method costs a little but significantly.
+- The gain holds on sessions the stream never saw: aligning to the first half of each new state's sessions and
+  scoring only the second half gives +12.3 (+5.6 to +19.7) over the recipe against +13.4 for the full stream.
+- What the grouping contributes is the averaging, not the grasp identity: random groups of touches do as well.
+- Weakness to report: alignment lowers the gel-change stratum (recipe 39.6, full method 37.6, recipe without the
+  low-pass reading 46.3).
+- SITR (two seeds, 12 ordered Mini pairs): accuracy on the classes learned on the old Mini rises from about 13 to 72
+  with alignment and per-image confidence. With only 5 of the 20 classes in the new Mini's unlabelled images, the
+  gain roughly halves but stays above no adaptation in every pair: the stream must cover the materials.
+- Tactile MNIST cannot test the tie: single touches do not identify a printed digit even on one gel (about 20 on
+  later days of the same gel), so every variant sits at chance.
+- Running: per-touch confidence seeds 1-2, causal-stream seeds, the random-group objective on SITR with three seeds,
+  group sizes.
