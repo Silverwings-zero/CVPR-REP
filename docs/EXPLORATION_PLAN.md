@@ -216,3 +216,18 @@ Until today, the only methods run on the pooled protocol were DANN (2015) and CO
 - **Seeds 3 and 4** for the full method and DANN run on the cluster (wave 8, tasks 1 to 6). The CDAN+E rows run locally (queue 19).
 - **The centre-frame anomaly is explained, not a bug.** The crop geometry of the reading is correct. The centre-frame recipe already collapses onto one material per fold: 43 percent of fold D's predictions go to one class, and 51 percent of fold AB's to another. The reading pulls every frame's look towards the training mean, and a classifier that reads the whole frame's look then sends almost everything to that same class (82 percent on fold D). Neither class is in the top ten, hence zero there. Tube crops, centred on the contact, do not carry the frame-wide look, which is why the reading helps on them. This belongs in the paper as the reading's scope: contact crops, not whole frames.
 - **Five seeds on CDAN+E (16:40).** Grouped confidence on top of CDAN+E is +0.4 with our reading (−1.9 to +2.6) and +1.1 without it (−1.3 to +3.2). The null result on CDAN+E is confirmed. Seeds 3 and 4 of the full method and of DANN run locally (queue 20, about 20:00), after five hours of waiting in the cluster queue.
+
+## Final ablation (2026-11-02, 20:00): five seeds, CNN, tube view
+
+| Row | Pooled cross-hardware accuracy | Step over the row above |
+|---|---|---|
+| Recipe | about 32 | |
+| Recipe with our reading | 42 | +10 (training-free) |
+| DANN with the robot's post-change touches, with our reading | 51.7 | +9.4 (+4.4 to +14.5) |
+| CDAN+E, same information, with our reading | 53.3 | +1.7 over DANN (+0.2 to +3.5) |
+| DANN with grouped confidence, with our reading (our full method) | 53.4 | +1.7 over DANN (−1.7 to +5.3), not significant |
+| CDAN+E with grouped confidence, with our reading | 53.8 | +0.4 over CDAN+E (−1.9 to +2.6), not significant |
+
+- **Verdict.** The two parts that work are the training-free reading and alignment on the robot's own unlabelled touches after the change. Grouped confidence adds between nothing and two points on either aligner, and that gain is not significant at five seeds. It cannot be claimed as a contribution.
+- **What still stands.** The reading lifts every published retraining method by 3 to 5 points. It beats every test-time method on the robot's stream, and no test-time method beats it on a shuffled stream. Alignment carries over to ResNet-50 and ConvNeXt-T, with larger gains than on the CNN. SITR's +15 for grouped confidence over alignment alone was on a different problem (a new Mini unit with label-tied classes). It is not evidence on our data.
+- **Story decision needed from the user** (see the conversation of 2026-11-02).
