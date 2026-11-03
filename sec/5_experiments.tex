@@ -2,7 +2,7 @@
 \label{sec:exp}
 
 \paragraph{Protocol.}
-On our recordings, the main split trains on campaigns A, B and C (June and July, \EpTrainABC\ episodes) and tests on campaign D (September and October, \EpTestD\ episodes, 20 materials, chance 5\pct). The test set holds three hardware relations. Fifteen materials were learned on unit 1 and are tested on unit 2. Four rigid materials (cork, fibreglass, ABS, ceramic) were learned on unit 2 in July and are tested on its replaced gel. Wood was learned on unit 1 and is tested on the replaced gel. Two of the fifteen materials, textured rubber and EPDM foam, were replaced by new pieces of the same kind before campaign D. Every CNN input is a single native 192-px crop, twelve per episode, and the logits of an episode's crops are summed. We report macro accuracy, macro-F1, and the share of test episodes assigned to the most predicted class, which exposes a collapse onto few classes. The CNN is a four-stage convolutional encoder at native resolution, trained with cross-entropy for 12 epochs (supplement). Its jitter variant adds per-channel gains ($\pm$20\pct) and a smooth multiplicative field ($\pm$15\pct) during training. Heads are MLPs on frozen embeddings with three seeds, and CNN numbers average three training seeds. Whenever test images are read relative to a state estimate, training images are read relative to the mean of the other training sessions of their hardware epoch (\cref{sec:method}); otherwise both are read raw. Sparsh~\cite{higuera2024sparsh} receives its own two-frame input (two frames of the crop, five apart). All design choices were made on this split, and \cref{sec:folds} reports every other campaign as a test set.
+We test every recording of a material made on hardware other than the one it was learned on. Three folds hold out campaign D (September and October), campaign C (July 9--13), and campaigns A and B together (June and early July), and each trains on the remaining campaigns. Their test sessions on other hardware number 55. In 47 of them the material was learned on the other unit, and in 8 it was learned on the other gel of the same unit. The fold that holds out A and B is the reversed split whose predictions we wrote down before training any model for it (supplement). Each session holds one material. We report the share of a session's episodes that are classified correctly, averaged over the 55 sessions, with 95\pct\ intervals from a bootstrap over sessions, and paired bootstrap intervals for differences between methods. Chance is 5\pct. We also report the share of test episodes assigned to the most predicted class, which exposes a collapse onto few classes. Unless stated otherwise, every method uses the same CNN, a four-stage convolutional encoder trained from scratch at the native \SI{11.3}{\micro\metre}/px on 192-px crops along the contact, with flips, quarter turns and photometric jitter. We call this training the recipe. An episode is classified from 24 crops. Table rows average three training seeds, and the comparisons between the closest methods use five. Every method that adapts receives the same unlabelled stream: all contacts recorded on the test hardware in the test campaign.
 
 \subsection{The shortcut under control}
 \label{sec:confound}
@@ -10,128 +10,138 @@ On our recordings, the main split trains on campaigns A, B and C (June and July,
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig/fig_confound.pdf}
-  \caption{\textbf{Tying classes to hardware, under control.} SITR~\cite{sitr2025} pressed 20 objects on four GelSight Minis. We train on $20-k$ classes recorded on one Mini and $k$ classes recorded only on the test Mini, and test all classes on the test Mini. \cref{alg:tracker} reads the test images one object at a time with its causal estimate (frozen DINOv2, MLP head; mean over 12 Mini pairs and class draws, band: 10th--90th percentile over pairs).}
+  \caption{\textbf{Tying classes to hardware, under control.} SITR~\cite{sitr2025} pressed 20 objects on four GelSight Minis. We train on $20-k$ classes recorded on one Mini and $k$ classes recorded only on the test Mini, and test all classes on the test Mini (frozen DINOv2, MLP head; mean over 12 Mini pairs and class draws, band: 10th--90th percentile over pairs).}
   \label{fig:confound}
 \end{figure}
 
-Our recordings tie each object to one hardware state, because each object was recorded in its own session. To test whether this tie causes the failure, we inject it into a dataset that does not have it. SITR~\cite{sitr2025} pressed the same 20 objects on four GelSight Minis. For a pair of Minis we train on $20-k$ classes recorded on one Mini and on $k$ classes recorded only on the other, and we test every class on the other Mini (\cref{fig:confound}). With no class tied, a frozen DINOv2 with an MLP head recognises the classes learned on the first Mini at \CfSitrRawZeroCross\pct. Tying a single class to the test Mini drops this to \CfSitrRawOneCross\pct\ on average over Mini pairs, and \CfSitrRawOneTop\pct\ of all test images fall into that one class. We then run the reading of \cref{alg:tracker} on the test Mini's stream, with the objects arriving one after another and each image read relative to the per-object estimate available before it. The reading lifts the untied case to \CfTrkSitrZeroCross\pct\ and the case with one tied class to \CfTrkSitrOneCross\pct, and it cuts the share of the tied class to \CfTrkSitrOneTop\pct. One tied class therefore still costs about 15 points after the reading, and four tied classes cost about 30 (\CfTrkSitrFourCross\pct). Re-rendering every training image under the other Mini's state does slightly better here (\CfSitrSaugOneCross\pct\ for one tied class). On Real Tactile MNIST~\cite{tactilemnist2025} we tie digits to gels instead. Tying one digit to the test gel sends \CfTmdRawOneTop\pct\ of the test touches to that digit, and the accuracy on the other digits falls from \CfTmdRawZeroCross\ to \CfTmdRawOneCross\pct. The reading restores \CfTrkTmOneCross\pct, about the raw untied level. 
-
-The additive corrections have a limit. A CNN trained from scratch on either confounded set still collapses, and on SITR it scores \CfSitrCnnRawCross\pct\ on the other classes raw and \CfSitrCnnSaugCross\pct\ with state augmentation. SITR's Minis differ in more than an additive image, because they see different parts of their gels and differ in contrast by a factor of \SmContrastRatio\ (supplement). A CNN trained to tell two Minis apart still does so for \UpSitrRead\pct\ of the images of unseen objects after the reading, and one trained on Tactile MNIST's two gels for \UpTmnistRead\pct. For our two units the same test falls from \UpOursRaw\pct\ raw to \UpOursRead\pct\ after the reading, where chance is 50\pct. On our data the hardware differs mostly by an additive image, while on these two public sets it also differs in ways the reading does not remove.
+Our recordings tie each object to one hardware state, because each object was recorded in its own session. To test whether this tie causes the failure, we inject it into a dataset that does not have it. SITR~\cite{sitr2025} pressed the same 20 objects on four GelSight Minis. For a pair of Minis we train on $20-k$ classes recorded on one Mini and on $k$ classes recorded only on the other, and we test every class on the other Mini (\cref{fig:confound}). With no class tied, a frozen DINOv2 with an MLP head recognises the classes learned on the first Mini at \CfSitrRawZeroCross\pct. Tying a single class to the test Mini drops this to \CfSitrRawOneCross\pct\ on average over Mini pairs, and \CfSitrRawOneTop\pct\ of all test images fall into that one class. On Real Tactile MNIST~\cite{tactilemnist2025} we tie digits to gels instead. Tying one digit to the test gel sends \CfTmdRawOneTop\pct\ of the test touches to that digit. Our own recordings show the same failure. Trained with the recipe, the CNN recognises the materials of the 55 sessions at \XpRecipeAcc\pct, and in every fold about a quarter of the test episodes go to a single class.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
-  \caption{\textbf{Material after a change of hardware} on our recordings. Train June--July, test September--October (20 materials, chance 5\pct). All: accuracy\,/\,macro-F1. Other unit: the 15 materials learned on unit~1. Other gel: the 4 learned on unit~2 before its gel was replaced. Top: share of episodes in the most predicted class. Rows marked $^\ast$ are non-causal or use a session picked by hand.}
-  \label{tab:material}
+  \caption{\textbf{Comparison with published adaptation methods} on the 55 cross-hardware sessions (episode accuracy, three seeds, chance 5\pct). Unit / gel: the 47 sessions whose material was learned on the other unit and the 8 learned on the other gel. Top: share of test episodes in the most predicted class. Test-time methods adapt the trained recipe model on the robot's stream in recording order and are reset at each change of hardware. Retraining methods use the same stream without labels during training. $+$\,reading: test images read with \cref{alg:tracker}.}
+  \label{tab:baselines}
   \resizebox{\linewidth}{!}{%
   \begin{tabular}{@{}lcccc@{}}
     \toprule
-    model and reading of the test images & all & other unit & other gel & top \\
+    method & all [95\pct\ interval] & unit & gel & top \\
     \midrule
-    CNN, raw & \af{\SrcSupNoneAcc}{\SrcSupNoneF} & \DOneSupRaw & \DTwoSupRaw & \SrcSupNoneTop \\
-    \ \ AdaBN per hardware state$^\ast$~\cite{li2018adabn} & \af{\TtaSupAdabnEpochsAcc}{\TtaSupAdabnEpochsF} & \DOneTtaSupAdabnEpochs & \DTwoTtaSupAdabnEpochs & \TtaSupAdabnEpochsTop \\
-    \ \ TENT, mixed batches$^\ast$~\cite{wang2021tent} & \af{\TtaSupTentIidAcc}{\TtaSupTentIidF} & \DOneTtaSupTentIid & \DTwoTtaSupTentIid & \TtaSupTentIidTop \\
-    \ \ LAME~\cite{boudiaf2022lame} & \af{\TtaSupLameAcc}{\TtaSupLameF} & \DOneTtaSupLame & \DTwoTtaSupLame & \TtaSupLameTop \\
-    \ \ RoTTA, ordered stream~\cite{yuan2023rotta} & \af{\TtaSupRottaAcc}{\TtaSupRottaF} & \DOneTtaSupRotta & \DTwoTtaSupRotta & \TtaSupRottaTop \\
-    \ \ $-$ previous session's state$^\ast$ & \af{\FoDSupPrevSessStateAcc}{\FoDSupPrevSessStateF} & \FoDSupPrevSessStateOne & \FoDSupPrevSessStateTwo & \FoDSupPrevSessStateTop \\
-    \ \ $-$ a bare-gel frame of the session$^\ast$ & \af{\FoDSupBareStateAcc}{\FoDSupBareStateF} & \FoDSupBareStateOne & \FoDSupBareStateTwo & \FoDSupBareStateTop \\
-    \ \ $-$ mean of the test state's images$^\ast$ & \af{\FoDSupStateMeanStateAcc}{\FoDSupStateMeanStateF} & \FoDSupStateMeanStateOne & \FoDSupStateMeanStateTwo & \FoDSupStateMeanStateTop \\
-    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\FoDSupTrkStateAcc}{\FoDSupTrkStateF}} & \FoDSupTrkStateOne & \FoDSupTrkStateTwo & \FoDSupTrkStateTop \\
-    \ \ $-$ \cref{alg:tracker}, test images only & \af{\FoDSupRawHeadAcc}{\FoDSupRawHeadF} & \FoDSupRawHeadOne & \FoDSupRawHeadTwo & \FoDSupRawHeadTop \\
-    CNN, instance-normalised input & \af{\FoDInstSupRawAcc}{\FoDInstSupRawF} & \FoDInstSupRawOne & \FoDInstSupRawTwo & \FoDInstSupRawTop \\
-    CNN, high-pass input & \af{\FoDHpSupRawAcc}{\FoDHpSupRawF} & \FoDHpSupRawOne & \FoDHpSupRawTwo & \FoDHpSupRawTop \\
-    CNN + Fourier domain adaptation~\cite{fda2020} & \af{\FoDFdaSupRawAcc}{\FoDFdaSupRawF} & \FoDFdaSupRawOne & \FoDFdaSupRawTwo & \FoDFdaSupRawTop \\
-    CNN + state augmentation, raw & \af{\FoDSaugSupRawAcc}{\FoDSaugSupRawF} & \FoDSaugSupRawOne & \FoDSaugSupRawTwo & \FoDSaugSupRawTop \\
-    \ \ $-$ \cref{alg:tracker} & \af{\FoDSaugSupTrkStateAcc}{\FoDSaugSupTrkStateF} & \FoDSaugSupTrkStateOne & \FoDSaugSupTrkStateTwo & \FoDSaugSupTrkStateTop \\
+    recipe, no adaptation & \XpSrcAcc\ [\XpSrcLo, \XpSrcHi] & \XpSrcUnit & \XpSrcGel & \XpSrcTop \\
     \midrule
-    CNN + jitter, raw & \af{\SrcAugNoneAcc}{\SrcAugNoneF} & \DOneAugRaw & \DTwoAugRaw & \SrcAugNoneTop \\
-    \ \ AdaBN per hardware state$^\ast$ & \af{\TtaAugAdabnEpochsAcc}{\TtaAugAdabnEpochsF} & \DOneTtaAugAdabnEpochs & \DTwoTtaAugAdabnEpochs & \TtaAugAdabnEpochsTop \\
-    \ \ LAME & \af{\TtaAugLameAcc}{\TtaAugLameF} & \DOneTtaAugLame & \DTwoTtaAugLame & \TtaAugLameTop \\
-    \ \ RoTTA & \af{\TtaAugRottaAcc}{\TtaAugRottaF} & \DOneTtaAugRotta & \DTwoTtaAugRotta & \TtaAugRottaTop \\
-    \ \ $-$ previous session's state$^\ast$ & \af{\FoDAugPrevSessStateAcc}{\FoDAugPrevSessStateF} & \FoDAugPrevSessStateOne & \FoDAugPrevSessStateTwo & \FoDAugPrevSessStateTop \\
-    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\FoDAugTrkStateAcc}{\FoDAugTrkStateF}} & \FoDAugTrkStateOne & \FoDAugTrkStateTwo & \FoDAugTrkStateTop \\
-    CNN + jitter + state augmentation, raw & \af{\FoDSaugAugRawAcc}{\FoDSaugAugRawF} & \FoDSaugAugRawOne & \FoDSaugAugRawTwo & \FoDSaugAugRawTop \\
-    \ \ $-$ \cref{alg:tracker} & \af{\FoDSaugAugTrkStateAcc}{\FoDSaugAugTrkStateF} & \FoDSaugAugTrkStateOne & \FoDSaugAugTrkStateTwo & \FoDSaugAugTrkStateTop \\
+    \multicolumn{5}{@{}l}{\emph{test time, on the stream, no retraining}} \\
+    test-time BatchNorm~\cite{li2018adabn} & \XpTtaBnAcc\ [\XpTtaBnLo, \XpTtaBnHi] & \XpTtaBnUnit & \XpTtaBnGel & \XpTtaBnTop \\
+    Tent~\cite{wang2021tent} & \XpTtaTentAcc\ [\XpTtaTentLo, \XpTtaTentHi] & \XpTtaTentUnit & \XpTtaTentGel & \XpTtaTentTop \\
+    SAR~\cite{niu2023sar} & \XpTtaSarAcc\ [\XpTtaSarLo, \XpTtaSarHi] & \XpTtaSarUnit & \XpTtaSarGel & \XpTtaSarTop \\
+    DeYO~\cite{lee2024deyo} & \XpTtaDeyoAcc\ [\XpTtaDeyoLo, \XpTtaDeyoHi] & \XpTtaDeyoUnit & \XpTtaDeyoGel & \XpTtaDeyoTop \\
+    RoTTA~\cite{yuan2023rotta} & \XpTtaRottaAcc\ [\XpTtaRottaLo, \XpTtaRottaHi] & \XpTtaRottaUnit & \XpTtaRottaGel & \XpTtaRottaTop \\
+    reading (\cref{alg:tracker}), ours & \textbf{\XpSrcReadAcc}\ [\XpSrcReadLo, \XpSrcReadHi] & \XpSrcReadUnit & \XpSrcReadGel & \XpSrcReadTop \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{retraining with the unlabelled stream}} \\
+    DANN~\cite{ganin2016dann} & \XpDannAcc\ [\XpDannLo, \XpDannHi] & \XpDannUnit & \XpDannGel & \XpDannTop \\
+    \ \ $+$ reading & \XpDannReadAcc\ [\XpDannReadLo, \XpDannReadHi] & \XpDannReadUnit & \XpDannReadGel & \XpDannReadTop \\
+    MCC~\cite{jin2020mcc} & \XpMccAcc\ [\XpMccLo, \XpMccHi] & \XpMccUnit & \XpMccGel & \XpMccTop \\
+    \ \ $+$ reading & \XpMccReadAcc\ [\XpMccReadLo, \XpMccReadHi] & \XpMccReadUnit & \XpMccReadGel & \XpMccReadTop \\
+    SDAT~\cite{rangwani2022sdat} & \XpSdatAcc\ [\XpSdatLo, \XpSdatHi] & \XpSdatUnit & \XpSdatGel & \XpSdatTop \\
+    \ \ $+$ reading & \XpSdatReadAcc\ [\XpSdatReadLo, \XpSdatReadHi] & \XpSdatReadUnit & \XpSdatReadGel & \XpSdatReadTop \\
+    MIC~\cite{hoyer2023mic} & \XpMicAcc\ [\XpMicLo, \XpMicHi] & \XpMicUnit & \XpMicGel & \XpMicTop \\
+    \ \ $+$ reading & \XpMicReadAcc\ [\XpMicReadLo, \XpMicReadHi] & \XpMicReadUnit & \XpMicReadGel & \XpMicReadTop \\
+    CDAN+E~\cite{long2018cdan} & \XpCdanAcc\ [\XpCdanLo, \XpCdanHi] & \XpCdanUnit & \XpCdanGel & \XpCdanTop \\
+    \ \ $+$ reading, ours & \textbf{\XpFullAcc}\ [\XpFullLo, \XpFullHi] & \XpFullUnit & \XpFullGel & \XpFullTop \\
     \bottomrule
   \end{tabular}}
 \end{table}
 
-\subsection{Material after a change of hardware}
-\label{sec:material}
+\subsection{Comparison with published adaptation methods}
+\label{sec:baselines}
 
-\Cref{tab:material} shows the same failure on our recordings. Read raw, the CNN scores \SrcSupNoneAcc\pct\ and puts \SrcSupNoneTop\pct\ of the test episodes into a single class, one of the four materials it saw on unit 2. The fifteen materials it learned on unit 1 score \DOneSupRaw\pct. Frozen Sparsh encoders collapse in the same way (\cref{tab:encoders}), and a linear probe on their features tells the two units apart from a single crop at \ProbeIjepaRawUnit--\ProbeSdinoRawUnit\pct\ (supplement). The jitter CNN collapses much less and scores \SrcAugNoneAcc\pct.
+\Cref{tab:baselines} groups the methods by what they use. Test-time methods adapt the trained model while the stream arrives. Retraining methods train again with the stream as unlabelled target data. Every published method runs with its paper's default settings on the same encoder, training budget and stream, and the retraining methods keep the better of two trade-off weights on seed 0 (supplement).
 
-Reading the images relative to the state removes most of the collapse. With \cref{alg:tracker} the CNN reaches \FoDSupTrkStateAcc\pct\ (paired bootstrap over materials against raw, $+$\FoDSupCiLo\ to $+$\FoDSupCiHi\ points), and the jitter CNN \FoDAugTrkStateAcc\pct. This matches a bare-gel frame recorded in the same session (\FoDSupBareStateAcc\pct). That reading places the session's bare gel relative to the mean contact field of the whole test campaign, so it is not causal (supplement), and it exists only for campaign D, the first campaign in which we recorded bare-gel frames. Over test materials, the difference between the two lies between $\FoDSupCiVsBareLo$ and $+$\FoDSupCiVsBareHi\ points. The previous session's state, picked by hand, gives \FoDSupPrevSessStateAcc\pct\ for the CNN. For the jitter CNN it does slightly better than the tracker (\FoDAugPrevSessStateAcc\pct), because a session recorded just before shares the day's illumination. State augmentation alone, with raw test images, raises the CNN to \FoDSaugSupRawAcc\pct\ and the jitter CNN to \FoDSaugAugRawAcc\pct. It is the option when no estimate of the state is available at test time, but it adds nothing on top of the reading (\FoDSaugSupTrkStateAcc\ and \FoDSaugAugTrkStateAcc\pct). Two further readings show where the gain comes from. The mean of all test images of each hardware state, which needs the whole test campaign in advance, gives \FoDSupStateMeanStateAcc\pct, so the online estimate loses nothing to it. Reading only the test images, with heads fitted on raw training images, gives \FoDSupRawHeadAcc\pct, so most of the gain comes at test time.
+\paragraph{Test time.}
+Four of the five test-time methods fall to chance on the robot's stream. Test-time BatchNorm, Tent, SAR and DeYO estimate normalisation statistics from the current batch, and consecutive episodes come from one session, so every batch holds a single material. The statistics then normalise the material away. RoTTA was designed for such correlated streams. It survives, but it does not improve on the unadapted model by a margin we can distinguish from zero. In their own benchmark setting, with the episodes of each hardware state shuffled, the BatchNorm family recovers to \XpTtaBnIidAcc\pct, still below the unadapted model, and RoTTA reaches \XpTtaRottaIidAcc\pct. The reading needs neither batches nor gradient steps. It raises the unadapted model from \XpSrcAcc\ to \XpSrcReadAcc\pct, which is \XdSrcReadVsRotta\ points above RoTTA on the robot's stream (interval \XdSrcReadVsRottaLo\ to \XdSrcReadVsRottaHi) and \XdSrcReadVsRottaIid\ points above RoTTA on the shuffled stream, a difference whose interval includes zero.
 
-Three corrections that need no estimate of the state help less. Normalising each input image, training on its high-pass part, or swapping low spatial frequencies between training images~\cite{fda2020} raises the CNN to between \FoDFdaSupRawAcc\ and \FoDInstSupRawAcc\pct, and each still puts a fifth or more of the episodes into one class. None of them removes the fine pattern of the state, which lies inside the pass band of the high-pass input. Each of these models gains another 7 to 15 points when its test images are read with \cref{alg:tracker} (\FoDFdaSupTrkStateAcc\ to \FoDHpSupTrkStateAcc\pct).
-
-The adaptation baselines also do less. Re-estimating BatchNorm statistics per hardware state reaches \TtaSupAdabnEpochsAcc\pct\ even with the true change dates and all of the state's test images, and the tracker's advantage over it lies between $+$\FoDSupCiVsAdabnLo\ and $+$\FoDSupCiVsAdabnHi\ points over test materials. TENT reaches \TtaSupTentIidAcc\pct\ when given mixed batches that a robot would not have, and it collapses (\TtaSupTentAcc\pct) on the robot's stream, where each batch holds one object. LAME, which smooths predictions over neighbouring test samples, gives \TtaSupLameAcc\pct. RoTTA, which was designed for temporally correlated test streams, gives \TtaSupRottaAcc\pct\ for the CNN and \TtaAugRottaAcc\pct\ for the jitter CNN, and still puts \TtaSupRottaTop\pct\ of the CNN's episodes into one class. Label-shift correction lowers the accuracy to \TtaSupLabelshiftAcc\pct, because it finds the absorbing class frequent. These methods assume that a batch mixes classes or that the class priors carry the shift, and one object per session breaks both assumptions~\cite{burns2021bn,gong2022note}.
-
-\paragraph{Other encoders.}
-\Cref{tab:encoders} repeats the main comparison with other encoders. An ImageNet-pretrained ResNet-18 fine-tuned on the same crops collapses less than our CNN (\FoDResRawAcc\pct). Read with \cref{alg:tracker} it reaches \FoDResTrkStateAcc\pct, and \FoDResRawHeadAcc\pct\ when only the test images are read. For this encoder, reading the training images relative to the mean of their hardware hurts, and we have not found out why. Frozen DINOv2 rises from \DinovRawAcc\ to \DinovTrkStAcc\pct, and the frozen Sparsh encoders from \SdinoRawAcc--\IjepaRawAcc\ to \SdinoTrkStAcc--\IjepaTrkStAcc\pct. For the Sparsh encoders the four rigid materials of the replaced gel almost vanish after the reading (\DTwoMaeTrkSt--\DTwoIjepaTrkSt\pct). Their training images are read relative to the mean of only three other sessions on their hardware, an estimate that still carries those objects' imprints. Run in their own protocol, on whole frames at 224\,px with a background subtracted, the Sparsh encoders do worse on our materials and still collapse. With the session's bare-gel frame as the background, as Sparsh's pipeline uses it, Sparsh-I-JEPA scores \SnIjepaBlankAcc\pct\ and puts \SnIjepaBlankTop\pct\ of the episodes into one class. With \cref{alg:tracker}'s estimate as the background it scores \SnIjepaStateAcc\pct\ (supplement).
+\paragraph{Retraining.}
+Every retraining method improves on the recipe, and our reading improves almost every one of them further. Added to DANN, MCC and SDAT at test time, it gains between four and five points each, with intervals that exclude zero. MIC, which adds a masked-image consistency term to SDAT, does worse than SDAT on our data and gains little from the reading. CDAN+E is the strongest aligner here, and our method is CDAN+E with the reading. It reaches \XpFullAcc\pct. Over five seeds it is \XdFullVsDannRead\ points above DANN with the reading (\XdFullVsDannReadLo\ to \XdFullVsDannReadHi), and over three seeds \XdFullVsSdatRead\ points above SDAT with the reading (\XdFullVsSdatReadLo\ to \XdFullVsSdatReadHi) and \XdFullVsMccRead\ above MCC with the reading (\XdFullVsMccReadLo\ to \XdFullVsMccReadHi). The reading is not tied to our training. It helps whichever aligner sits under it.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
-  \caption{\textbf{Other encoders} on the split of \cref{tab:material} (accuracy\,/\,top-class share). Frozen encoders read the same native crops as the CNN, except the last three rows, which run Sparsh in its own protocol: whole frames at 224\,px, two frames five apart, with the background subtracted. There, the reading's background is \cref{alg:tracker}'s estimate on whole frames.}
+  \caption{\textbf{What each part contributes} (CNN, 55 cross-hardware sessions). $\Delta$: paired difference to the row named, with its 95\pct\ interval, over the seeds both runs have (three, or five where marked $^5$).}
+  \label{tab:ablation}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}llcl@{}}
+    \toprule
+    & pipeline & all & $\Delta$ \\
+    \midrule
+    a & recipe & \XpRecipeAcc & \\
+    b & a $+$ reading & \XpReadAcc & \XdReadVsRecipe\ [\XdReadVsRecipeLo, \XdReadVsRecipeHi] vs a \\
+    c & a $+$ alignment (CDAN+E) & \XpCdanAcc & \\
+    d & a $+$ alignment $+$ reading (ours) & \textbf{\XpFullAcc} & \XdFullVsRead\ [\XdFullVsReadLo, \XdFullVsReadHi] vs b \\
+    & & & \XdFullVsCdan\ [\XdFullVsCdanLo, \XdFullVsCdanHi] vs c$^5$ \\
+    \midrule
+    e & d with DANN as the aligner & \XpDannReadAcc & $-$\XdFullVsDannRead\ [$-$\XdFullVsDannReadHi, $-$\XdFullVsDannReadLo] vs d$^5$ \\
+    f & d $+$ grouped confidence & \XpCdanGrpAcc & \XdCdanGrpVsFull\ [\XdCdanGrpVsFullLo, \XdCdanGrpVsFullHi] vs d$^5$ \\
+    g & e $+$ per-touch confidence & \XpDannImAcc & \XdDannImVsDannRead\ [\XdDannImVsDannReadLo, \XdDannImVsDannReadHi] vs e \\
+    h & d, stream of the first half only$^\dagger$ & -- & \XdEarlyVsLate\ [\XdEarlyVsLateLo, \XdEarlyVsLateHi] vs b$^\dagger$ \\
+    \bottomrule
+  \end{tabular}}
+  \par\smallskip\raggedright\scriptsize $^\dagger$ aligned with the first half of each hardware state's test sessions and scored on the \XpLateN\ later sessions, which the stream never contained.
+\end{table}
+
+\subsection{What each part contributes}
+\label{sec:ablation}
+
+\Cref{tab:ablation} adds the parts one at a time. The reading alone gains about ten points without any training (b). Alignment alone gains more (c), and the two add up: the full method is better than either part alone (d). The gains do not depend on CDAN+E. DANN in its place loses a point or two (e). We also tried two confidence objectives on the stream, which ask the classifier to be confident on the new hardware while spreading its predictions over the classes. One averages the predictions of several touches before asking for confidence, as MEMO~\cite{zhang2022memo} averages over augmented copies of an image, and the other asks it of every touch, as SHOT~\cite{liang2020shot} does. Neither adds to alignment by a margin we can distinguish from zero (f, g), so the method does not include them.
+
+A robot that adapts to its own stream classifies some touches that the stream already contained. To separate adaptation from memorisation, we align with the first half of each hardware state's test sessions only and score the second half, which the stream never saw (h). The gain over the reading alone remains.
+
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{3pt}
+  \caption{\textbf{Other encoders} (55 cross-hardware sessions, three seeds). Tube: 192-px crops along the contact, as above. Frame: 384-px crops anywhere in the frame (392\,px for DINOv2). ResNet-50 and ConvNeXt-T start from ImageNet, DINOv2-B from its self-supervised weights, and all are fine-tuned.}
   \label{tab:encoders}
   \resizebox{\linewidth}{!}{%
-  \begin{tabular}{@{}lccc@{}}
+  \begin{tabular}{@{}llccc@{}}
     \toprule
-    encoder & raw & $-$ \cref{alg:tracker} & $-$ \cref{alg:tracker}, test only \\
+    view & encoder & recipe & $+$ reading & $+$ alignment $+$ reading \\
     \midrule
-    ResNet-18, ImageNet, fine-tuned~\cite{he2016resnet} & \af{\FoDResRawAcc}{\FoDResRawTop} & \af{\FoDResTrkStateAcc}{\FoDResTrkStateTop} & \af{\FoDResRawHeadAcc}{\FoDResRawHeadTop} \\
-    DINOv2, frozen~\cite{oquab2024dinov2} & \af{\DinovRawAcc}{\DinovRawTop} & \af{\DinovTrkStAcc}{\DinovTrkStTop} & -- \\
-    Sparsh-I-JEPA, frozen & \af{\IjepaRawAcc}{\IjepaRawTop} & \af{\IjepaTrkStAcc}{\IjepaTrkStTop} & -- \\
-    Sparsh-DINO, frozen & \af{\SdinoRawAcc}{\SdinoRawTop} & \af{\SdinoTrkStAcc}{\SdinoTrkStTop} & -- \\
-    Sparsh-MAE, frozen & \af{\MaeRawAcc}{\MaeRawTop} & \af{\MaeTrkStAcc}{\MaeTrkStTop} & -- \\
+    tube & CNN (ours, from scratch) & \XpRecipeAcc & \XpReadAcc & \XpFullAcc \\
+    tube & ResNet-50~\cite{he2016resnet} & \XpResRecipeAcc & \XpResReadAcc & \XpResFullAcc \\
+    tube & ConvNeXt-T & \XpCnxRecipeAcc & \XpCnxReadAcc & \XpCnxFullAcc \\
+    tube & DINOv2-B~\cite{oquab2024dinov2} & \XpDinoRecipeAcc & \XpDinoReadAcc & \XpDinoFullAcc \\
     \midrule
-    Sparsh-I-JEPA, own protocol & \af{\SnIjepaRawAcc}{\SnIjepaRawTop} & \af{\SnIjepaStateAcc}{\SnIjepaStateTop} & -- \\
-    Sparsh-DINO, own protocol & \af{\SnSdinoRawAcc}{\SnSdinoRawTop} & \af{\SnSdinoStateAcc}{\SnSdinoStateTop} & -- \\
-    Sparsh-MAE, own protocol & \af{\SnMaeRawAcc}{\SnMaeRawTop} & \af{\SnMaeStateAcc}{\SnMaeStateTop} & -- \\
+    & & recipe & $+$ alignment & $+$ alignment $+$ reading \\
+    \midrule
+    frame & ResNet-50 & \XpResFrameRecipeAcc & \XpResFrameCdanAcc & \XpResFrameCdanReadAcc \\
+    frame & ConvNeXt-T & \XpCnxFrameRecipeAcc & \XpCnxFrameCdanAcc & \XpCnxFrameCdanReadAcc \\
+    frame & DINOv2-B & \XpDinoFrameRecipeAcc & \XpDinoFrameCdanAcc & \XpDinoFrameCdanReadAcc \\
     \bottomrule
   \end{tabular}}
 \end{table}
 
-\subsection{Every campaign as a test set}
-\label{sec:folds}
-\label{sec:timeorstate}
+\subsection{Other encoders and views}
+\label{sec:encoders}
+
+\Cref{tab:encoders} repeats the comparison with pretrained encoders. On the tube view, every encoder collapses under the recipe in the same way as our CNN, and the reading lifts each of them by ten to twenty points. Alignment adds to the reading for every encoder. The frame view gives the encoders a larger field of view, crops of 384\,px placed anywhere in the frame. There, alignment carries most of the gain, and the reading does not help. A crop of the whole frame contains the illumination field itself, so a classifier that has learned the field as a class feature still sees it after the reading has moved every frame towards the training mean. The reading is meant for crops along the contact, and that is where we use it.
+
+\subsection{A second sensor family: SITR's Minis}
+\label{sec:second}
 
 \begin{table}[t]
-  \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
-  \caption{\textbf{Each campaign held out in turn} (accuracy, 20-way). In A and B every test material was learned on the test hardware. In C, four test materials were learned on the other gel and wood on the other unit. D is the split of \cref{tab:material}. Training seeds per fold: A \FoASupRawN, B \FoBSupRawN, C \FoCSupRawN, D \FoDSupRawN.}
-  \label{tab:rotation}
-  \begin{tabular}{@{}lcccc@{}}
+  \centering\footnotesize\setlength{\tabcolsep}{3pt}
+  \caption{\textbf{SITR with four classes tied to the test Mini}, CNN from scratch: accuracy on the 16 classes learned only on the other Mini (12 ordered Mini pairs, three seeds). Stream: the test Mini's unlabelled training split, all 20 classes or 5 of them.}
+  \label{tab:sitr}
+  \begin{tabular}{@{}lcc@{}}
     \toprule
-    test campaign & A & B & C & D \\
+    training & stream of 20 classes & stream of 5 \\
     \midrule
-    CNN, raw & \FoASupRawAcc & \FoBSupRawAcc & \FoCSupRawAcc & \FoDSupRawAcc \\
-    \ \ $-$ \cref{alg:tracker} & \FoASupTrkStateAcc & \FoBSupTrkStateAcc & \FoCSupTrkStateAcc & \FoDSupTrkStateAcc \\
-    \ \ state-augmented, $-$ \cref{alg:tracker} & \FoASaugSupTrkStateAcc & \FoBSaugSupTrkStateAcc & \FoCSaugSupTrkStateAcc & \FoDSaugSupTrkStateAcc \\
-    CNN + jitter, raw & \FoAAugRawAcc & \FoBAugRawAcc & \FoCAugRawAcc & \FoDAugRawAcc \\
-    \ \ $-$ \cref{alg:tracker} & \FoAAugTrkStateAcc & \FoBAugTrkStateAcc & \FoCAugTrkStateAcc & \FoDAugTrkStateAcc \\
-    \ \ state-augmented, $-$ \cref{alg:tracker} & \FoASaugAugTrkStateAcc & \FoBSaugAugTrkStateAcc & \FoCSaugAugTrkStateAcc & \FoDSaugAugTrkStateAcc \\
+    recipe & \XsRaw & -- \\
+    recipe with photometric jitter & \XsJit & -- \\
+    $+$ alignment, DANN & \XsDann & \XsDannK \\
+    $+$ alignment, CDAN+E (ours) & \XsCdan & \XsCdanKfive \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\Cref{tab:rotation} holds out each campaign in turn and reads every test campaign with \cref{alg:tracker}. Where the test hardware was seen in training for every test material (folds A and B), the reading neither helps nor costs much. An earlier version read each training image relative to the previous session, a single object sometimes on other hardware, and lost up to ten points here, which the same-hardware reference removes. State augmentation is mixed across folds. It helps the plain CNN where its test classes were learned on other hardware (fold C, \FoCSupTrkStateAcc\ to \FoCSaugSupTrkStateAcc\pct), costs a few points on known hardware, and hurts the jitter CNN in fold C. The gain in fold D is a gain against the shortcut. Trained on A and B alone, with all fifteen of their materials on unit 1, the CNN collapses less on D (\TsABSupRawAcc\pct\ raw over all 20 test materials, at most 75\pct\ possible). Trained on June alone, with one session per material, it scores \GapFoneSupBRawAcc\pct\ on its fifteen materials weeks later on the same unit and \GapFoneSupDRawAcc\pct\ on the other unit. Neither the session's own state (\GapFoneSupDOwnAcc\pct) nor the previous session's (\GapFoneSupDPrevAcc\pct) recovers this loss. Trained on June and July, with two sessions per material on unit 1, and read with \cref{alg:tracker}, the CNN recognises the same materials on the other unit at \FoDSupTrkStateOne\pct. A second session per material and the reading together recover much of the loss.
+SITR's Minis differ in more than an additive image. They see different parts of their gels and differ in contrast by a factor of \SmContrastRatio\ (supplement). A CNN trained to tell two Minis apart still does so for \UpSitrRead\pct\ of the images of unseen objects after the reading, while for our two units the same test falls to \UpOursRead\pct, where chance is 50\pct. The reading cannot repair a tie between classes and Minis, and a CNN trained from scratch on SITR with four classes tied to the test Mini collapses with or without it. Alignment works on the encoder rather than on the image, so it should still help, and it does (\cref{tab:sitr}). With the test Mini's unlabelled images as the stream, CDAN+E raises the accuracy on the classes learned on the other Mini from \XsJit\ to \XsCdan\pct. When the stream holds only 5 of the 20 classes, the gain shrinks by about half, so the stream must cover the materials that the robot is expected to recognise.
 
-\paragraph{A test written down in advance.}
-Every design choice above was made on the split that tests on campaign D. Before training any model for it, we wrote down a reversed test with its settings and three predictions, and committed them to the paper's repository (supplement). The models train on campaigns C and D and are tested on A and B. The fifteen A and B materials were recorded on unit 1, where the training data hold only wood. The detector's thresholds come from the training data's largest hardware state, and every other setting stayed as it was. We predicted that the plain CNN would collapse onto wood, that \cref{alg:tracker} would raise its accuracy and lower the share of the top class, and that the jitter CNN would collapse less and gain less. All three held. Read raw, the plain CNN scores \FoABRevSupRawAcc\pct\ on the fifteen materials and puts \RevSupWoodShare\pct\ of the test episodes into wood. With \cref{alg:tracker} it reaches \FoABRevSupTrkStateAcc\pct\ ($+$\FoABRevSupCiLo\ to $+$\FoABRevSupCiHi\ points over test materials). AdaBN on all test images reaches \RevSupAdabnAcc\pct, and on this split the difference between the two is not significant ($\RevSupCiVsAdabnLo$ to $+$\RevSupCiVsAdabnHi\ points). The jitter CNN rises from \FoABRevAugRawAcc\ to \FoABRevAugTrkStateAcc\pct. The accuracy stays low because fourteen of the fifteen test materials were learned only on the other unit, two to three months later, which is the loss that no state estimate recovered in the June experiment above.
-
-\paragraph{The gel replacement.}
-In fold C the reading helps the jitter CNN (\FoCAugRawAcc\ to \FoCAugTrkStateAcc\pct) but not the plain CNN. To test whether the change of gel is additive, we re-rendered the gel-2 test crops of the four rigid materials under the state of gel 3, measured from bare-gel frames alone. This raises them from \GelRrCSupRaw\ to \GelRrCSupRr\pct\ for the plain CNN, so the gel change is largely additive. The tracker fails there because fold C's test sessions are the first on their hardware, so it has almost no other objects to average. In fold D the same four materials score well raw only because the collapse sends many episodes to them (precision \GelRrDSupPrecCork\ and \GelRrDSupPrecFiber\pct\ for cork and fibreglass). Their F1, which also counts the episodes wrongly sent to them, rises with the reading from \FoDSupRawTwoF\ to \FoDSupTrkStateTwoF\ for the CNN, while their accuracy falls.
-
-\subsection{The tracker on the stream}
+\subsection{Dating the changes}
 \label{sec:trackerexp}
 
-Run over all \EpRecorded\ episodes in recording order, the detector raises \FrAlarms\ alarms: \FrUnitLatency\ episodes after the change of unit, \FrGelLatency\ episodes after the gel replacement, and \FrFalseAlarms\ false ones, in the second September session after the summer break and on the day before the gel replacement. On streams spliced from four datasets, with thresholds set on one unit of each and nothing tuned on change points, it detects \TeOursFramesDet\pct\ of the changes from our recordings (\TeOursFramesUnitDet\pct\ of those involving the other unit and \TeOursFramesGelDet\pct\ of the gel changes on the same unit). On the public datasets it detects \TePubDetMin--\TePubDetMax\pct, with at most \TePubFaMax\ false alarms per 1{,}000 items (supplement). Our first implementation computed the statistics on the sparse material crops and missed the change of unit. We moved to whole frames after this failure and kept the rule, so the real-stream result is not an independent test, while the spliced public streams are.
-
-A running mean must either restart at a change or forget old objects. Never restarted, it reads the September sessions against a mixture of both units, and the CNN reaches \SrcSupNoResetAcc\pct. A mean that forgets old objects gives \FoDSupDecayNoDetStateAcc\pct\ even without the detector, so on our data the detector's value lies in dating the changes rather than in accuracy. Grouping contacts by object could leak class information, because in our test campaign each object is also a class. Weighting every contact equally still gives \FoDSupUniStateAcc\pct\ for the CNN and \FoDAugUniStateAcc\pct\ for the jitter CNN. Leaving the current object out of its own estimate, a variant we did not fix in advance, gives \FoDSupOtherStateAcc\pct. It lifts the four rigid materials of the replaced gel from \FoDSupTrkStateTwo\ to \FoDSupOtherStateTwo\pct, so part of their loss is the first objects' own imprint in the estimate. Further variants are in the supplement.
-
-\paragraph{What the estimate needs.}\label{sec:sources}
-Any unlabelled frames of the deployment work, provided they come from several objects (supplement). The session's own contacts are a worse estimate than other objects' contacts, because their mean contains the object. In a run with three seeds and five draws per size, an estimate built from one other object gives \CvsSupObjOne\pct, from two objects \CvsSupObjTwo\pct\ and from nineteen \CvsSupObjNineteen\pct. For the CNN the smooth illumination field alone does as well as the full field, and for the jitter CNN the fine pattern adds about four points.
-
-\subsection{Other sensors and datasets}
-\label{sec:second}
-\paragraph{A published benchmark with the tie built in.}
-HCT, the hand-held DIGIT part of TVL~\cite{tvl2024}, records each material in its own sessions, and a recent material benchmark on it reports 98.8\pct\ with training and test frames drawn from the same sessions~\cite{mohsan2026language}. On that split, a frozen DINOv2 with an MLP head scores \HctPubRawAcc\pct\ on its \HctClasses\ classes. Holding out whole sessions lowers this to \HctSessRawAcc\pct, and holding out whole recording days to \HctDayRawAcc\pct. Here our tools do not help. HCT's own no-contact frames give \HctDayBgAcc\pct\ on held-out days and our running estimate \HctDayStreamAcc\pct, and the no-contact frame alone does not predict the material of a session recorded on another day (\HctProbeOtherDays\pct, against \HctProbeMajority\pct\ for the most frequent class). Several HCT days are dominated by one material, so a running mean within a day carries that material's imprint. What separates HCT's sessions and days is therefore mostly not an additive sensor state, but holding out sessions is what reveals it.
+Run over all \EpRecorded\ episodes in recording order, the detector raises \FrAlarms\ alarms: \FrUnitLatency\ episodes after the change of unit, \FrGelLatency\ episodes after the gel replacement, and \FrFalseAlarms\ false ones, in the second September session after the summer break and on the day before the gel replacement. On streams spliced from four datasets, with thresholds set on one unit of each and nothing tuned on change points, it detects \TeOursFramesDet\pct\ of the changes from our recordings (supplement). A false alarm costs little, because the estimate restarts from the training mean and fills again with the next objects. Reading the test images with the estimate restarted at the detector's alarms instead of the true dates gives \XpReadVarDetAcc\pct\ for the recipe model, against \XpReadVarLpAcc\pct\ with the true dates.

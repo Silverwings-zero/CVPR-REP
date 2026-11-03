@@ -231,3 +231,17 @@ Until today, the only methods run on the pooled protocol were DANN (2015) and CO
 - **Verdict.** The two parts that work are the training-free reading and alignment on the robot's own unlabelled touches after the change. Grouped confidence adds between nothing and two points on either aligner, and that gain is not significant at five seeds. It cannot be claimed as a contribution.
 - **What still stands.** The reading lifts every published retraining method by 3 to 5 points. It beats every test-time method on the robot's stream, and no test-time method beats it on a shuffled stream. Alignment carries over to ResNet-50 and ConvNeXt-T, with larger gains than on the CNN. SITR's +15 for grouped confidence over alignment alone was on a different problem (a new Mini unit with label-tied classes). It is not evidence on our data.
 - **Story decision needed from the user** (see the conversation of 2026-11-02).
+
+## The method, final (2026-11-02, 23:00)
+
+**Decision (data owner): what works is the method.** It has two parts. The first is the training-free low-pass reading of every test image relative to the running state estimate, with the detector that dates changes. The second is alignment of the encoder with the robot's unlabelled post-change stream, using CDAN+E (Long et al. 2018) adapted without changes to its loss. CDAN+E is the strongest aligner on five seeds (+1.7 over DANN, interval +0.2 to +3.5). Grouped and per-touch confidence become ablation rows, and neither is significant. The paper no longer discusses whether the method is novel.
+
+**Paper rewritten to this method** (abstract, intro method paragraph and contributions, related work on adaptation, method section, experiments, discussion). The experiments now use the pooled 55-session protocol throughout. Every number comes from `HapTeleop/scripts/xp/paper_numbers_xp.py` → `numbers_xp.tex`. Runs still in flight print as a bold ??.
+
+**Running, so every row uses the final method:**
+- Local queue 21: CDAN+E on the first half of each state's stream, scored on the unseen second half (CNN); ResNet-50 and ConvNeXt-T tube with CDAN+E. Three seeds each.
+- Local, before that: SITR with CDAN+E (12 Mini pairs, three seeds), and its 5-class stream.
+- Cluster wave 9 (job 13689694): DINOv2 tube with CDAN+E; whole-frame ResNet-50, ConvNeXt-T and DINOv2 with CDAN+E (three seeds), and their frame recipes for seeds 1 and 2.
+- Cluster wave 10 (job 13689926): variants of the reading, evaluated on saved models without retraining. The variants are the full field against the low-pass, low-pass widths of 8 to 132 px, the prior weight, the last session only, the own session (non-causal), and restarts at the detector's alarms instead of the true dates. They run on the recipe and on CDAN+E.
+
+**Still to redo for the new method:** the SITR figure (Fig. 3 shows the old tracker reading), the method figure, and the supplement, which is still written for the old protocol.
