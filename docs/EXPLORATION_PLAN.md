@@ -291,3 +291,9 @@ Macros: `paper_numbers_xp.py` generates every method row per model family (`meth
 ### Status Nov 5, 00:30: wave 14 moves to the local GPU
 
 Queue 26 at 53 of 117 (no failure); its 64 remaining lines (grouped confidence, per-touch confidence, MCC, SDAT, MIC, CORAL, early stream) end about 22:00 on Nov 5, then queues 27 and 25 by about 01:30 on Nov 6. Wave 14 has been pending on priority since 13:40 on Nov 4 (fair share 0.17, no start estimate), so its 72 commands are queued locally as `local_queue28.tsv` (60, about 14 h: SDAT and MIC at weight 0.3 on seed 0, bootstrapped reading, FDA 0.01 and 0.05, recipe bootstrap, full model with checkpoint and readings) and `local_queue29.tsv` (seeds 1-2 of SDAT and MIC at weight 0.3, run only if they win on seed 0; empty the file before it starts otherwise). A waiter starts them when queue 25 ends, after pulling the cluster's results and cancelling only the still-pending tasks of 13722340. Expected end: about 16:00 on Nov 6 for queue 28, about 22:00 for queue 29. Wave 11 tasks 8-9 (CNN frame pooling) stay on the cluster, since the frame cache exists only there.
+
+### Paused Nov 5, 13:51 (user request)
+
+Every local job is stopped and the GPU is free: the queue chain and the waiter behind it were stopped, and the MIC run that had started at 13:48 was lost with them. Wave 14 had already run on the cluster (05:54 to 08:23, all 27 tasks completed) and its predictions are pulled, so local queues 28 and 29 have nothing left to do. No job of mine is queued or running on the cluster. Left: queue 26, 24 lines (MIC 6, CORAL 9, early stream 9, about 8.5 h); queue 27, 9 reading lines on the recipe model (about 1 h); queue 25, 16 CNN FDA runs (about 2 h). To resume, run the chain below in the background. The lane skips every line whose prediction exists.
+
+    for q in 26 27 25; do bash cluster/local_lane.sh cluster/tasks/local_queue$q.tsv > outputs/xp/locallogs/lane$q.log 2>&1; done
