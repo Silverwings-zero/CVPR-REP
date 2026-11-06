@@ -297,3 +297,11 @@ Queue 26 at 53 of 117 (no failure); its 64 remaining lines (grouped confidence, 
 Every local job is stopped and the GPU is free: the queue chain and the waiter behind it were stopped, and the MIC run that had started at 13:48 was lost with them. Wave 14 had already run on the cluster (05:54 to 08:23, all 27 tasks completed) and its predictions are pulled, so local queues 28 and 29 have nothing left to do. No job of mine is queued or running on the cluster. Left: queue 26, 24 lines (MIC 6, CORAL 9, early stream 9, about 8.5 h); queue 27, 9 reading lines on the recipe model (about 1 h); queue 25, 16 CNN FDA runs (about 2 h). To resume, run the chain below in the background. The lane skips every line whose prediction exists.
 
     for q in 26 27 25; do bash cluster/local_lane.sh cluster/tasks/local_queue$q.tsv > outputs/xp/locallogs/lane$q.log 2>&1; done
+
+## Status 2026-11-05 19:45
+
+- Local queues resumed at 19:24 (chain 26 -> 27 -> 25; ends about 07:00 Nov 6).
+- Paper main is now the ResNet-50 version (23ad4f6, merged from r50-headline): readability and story pass, verified to compile (tectonic, no undefined references) with the main text ending on page 8 under Times metrics (about four lines of slack).
+- Pending in the paper: ablation row i (r50_tube_geo_cdan_early, queue 26) prints ?? and has a TODO in the experiments and discussion; the supplement still describes the old protocol (due Nov 23).
+- The ablation's low-pass and detector sentences now use the full method's variants (complete), so queue 27 (recipe reading variants) only feeds the supplement.
+- The Overleaf compile error (\FoDSupTrkStateAcc undefined in the abstract) came from a stale Overleaf copy (abstract from Oct 28); GitHub main compiles.
