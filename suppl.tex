@@ -2,6 +2,7 @@
 \usepackage[review]{cvpr}
 \input{preamble}
 \input{numbers}
+\input{numbers_xp}
 \usepackage{booktabs,multirow,siunitx,xcolor,graphicx}
 \definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
 \usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
@@ -71,6 +72,27 @@ RoTTA~\cite{yuan2023rotta} replaces every BatchNorm layer with a robust one that
 \label{fig:sitrminis}
 \end{figure}
 \Cref{fig:sitrminis} shows that SITR's Minis differ in more than an additive image. The standard deviation of the contact signal differs by a factor of \SmContrastRatio\ between the Minis, and Mini 4 sees a different part of its gel. We repeated the CNN experiment ($k=4$, the same four pairs, one new draw of tied classes) with readings that also equalise these differences. Besides the mean, the location-and-scale reading divides by each Mini's per-pixel standard deviation, and the colour reading aligns each Mini's $3\times3$ colour covariance with the average of the two. The accuracy on the classes learned on the other Mini is \SmStreamCross\pct\ with the mean alone, \SmLocscaleCross\pct\ with location and scale, and \SmColourCross\pct\ with colour alignment. A CNN trained to tell the two Minis apart identifies the Mini in \SmStreamProbe\pct\ of the held-out images after every one of these readings. The field of view is a geometric difference that no per-pixel reading removes, and a CNN trained from scratch on a few thousand images uses it. We measured the same quantity on both datasets with one protocol (\texttt{scripts/unit\_probe\_cnn.py}). A CNN is trained from scratch for six epochs to tell two hardware states apart and tested on objects it has not seen: on our data the \UpOursMaterials\ materials recorded on both unit 1 with gel 1 and unit 2 with gel 2, split in two halves used in turn, and on SITR each of the six pairs of Minis with the 20 objects split in two halves. Raw, it identifies our unit in \UpOursRaw\pct\ of the crops and SITR's Mini in \UpSitrRaw\pct\ of the images. After the reading, our unit falls to \UpOursRead\pct\ and SITR's Mini stays at \UpSitrRead\pct\ for every pair of Minis. On Real Tactile MNIST, with the digits split in two halves, the probe tells gel 0 from gel 1 in \UpTmnistRaw\pct\ of the touches raw and \UpTmnistRead\pct\ after the reading.
+
+\section{Alignment on SITR with four classes tied to the test Mini}
+\Cref{tab:sitr} gives the rows behind the SITR paragraph of the paper. A CNN is trained from scratch on 16 classes from one Mini and 4 classes recorded only on the test Mini, for each of the 12 ordered Mini pairs, and is scored on the 16 classes it learned on the other Mini. The stream is the test Mini's unlabelled training split, holding all 20 classes or only 5 of them.
+\begin{table}[h]
+  \centering\footnotesize\setlength{\tabcolsep}{3pt}
+  \caption{\textbf{SITR with four classes tied to the test Mini}, CNN from scratch: accuracy on the 16 classes learned only on the other Mini (12 ordered Mini pairs, three seeds, one seed for the stream of 5). Stream: the test Mini's unlabelled training split, all 20 classes or 5 of them. Confidence: per-image information maximisation on the stream, as in SHOT~\cite{liang2020shot}.}
+  \label{tab:sitr}
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    training & stream of 20 classes & stream of 5 \\
+    \midrule
+    no photometric jitter & \XsRaw & -- \\
+    photometric jitter & \XsJit & -- \\
+    $+$ alignment, DANN & \XsDann & \XsDannK \\
+    $+$ alignment, CDAN+E (our aligner) & \XsCdan & \XsCdanKfive \\
+    \midrule
+    DANN $+$ confidence & \XsDannIm & \XsDannImKfive \\
+    CDAN+E $+$ confidence & \XsCdanIm & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \section{The gel replacement}
 The four rigid materials were recorded on gel 2 in July and on gel 3 in October. The state difference between the gels is measured without contact, as the difference of the mean marker-inpainted bare-gel frames of campaign D's gel-3 and gel-2 sessions (mean absolute difference \GelRrDelta\ grey levels). Fold C model (learned the four on gel 3), July gel-2 crops: raw \GelRrCSupRaw\pct, re-rendered to gel 3 \GelRrCSupRr\pct\ (jitter CNN \GelRrCAugRaw\ and \GelRrCAugRr). Fold D model (learned them on gel 2), October gel-3 crops: raw \GelRrDSupRaw, re-rendered to gel 2 \GelRrDSupRr\pct\ (jitter CNN \GelRrDAugRaw\ and \GelRrDAugRr). In fold D the raw recall of cork and fibreglass is \GelRrDSupRecCork\ and \GelRrDSupRecFiber\pct\ at a precision of \GelRrDSupPrecCork\ and \GelRrDSupPrecFiber\pct.
