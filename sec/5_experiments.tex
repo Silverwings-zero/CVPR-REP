@@ -2,185 +2,136 @@
 \label{sec:exp}
 
 \paragraph{Protocol.}
-Material: each campaign is held out in turn (\cref{sec:timeorstate}); the fold that trains on A+B+C (June--July, 1{,}360 episodes) and tests on D (September--October, 1{,}351 episodes, 20 materials, chance 5\pct) is the deployment case and carries the main tables: the second unit appears in its training data for four rigid materials only (July 10--13), so fifteen materials are tested on a unit they were never recorded on (S1$\rightarrow$S2) and five on a replaced gel of the unit they were recorded on (S2$\rightarrow$S3); inputs are single native 192-px crops (11.3\,\si{\micro\metre}/px; 12 per episode; frame integration and resolution are ablated in \cref{sec:ablation}); per episode, logits of its crops are pooled; we report macro accuracy, macro-F1 (collapse onto a few classes leaves macro accuracy unchanged and F1 not) and the share of test episodes assigned to the most predicted class. Heads are MLPs on frozen embeddings, three seeds; labels are used only in the heads. When test embeddings are state-calibrated, the training embeddings are calibrated with \emph{their} previous session's state as well, so that the head sees one transform at both ends; raw rows use raw embeddings at both ends. Because campaign D records every material in exactly one session, materials are the unit of statistics: we give paired bootstrap intervals over the 20 materials for the claims we make. The era probe (given the material, which campaign) measures campaign-identifiability of a representation on the training campaigns (chance \num{57.7}\pct, lower is better). Every design choice was selected on campaign D; the other three folds of \cref{sec:timeorstate} are independent of that.
+On our recordings, the main split trains on campaigns A, B and C (June and July, \EpTrainABC\ episodes) and tests on campaign D (September and October, \EpTestD\ episodes, 20 materials, chance 5\pct). The test set holds three hardware relations. Fifteen materials were learned on unit 1 and are tested on unit 2. Four rigid materials (cork, fibreglass, ABS, ceramic) were learned on unit 2 in July and are tested on its replaced gel. Wood was learned on unit 1 and is tested on the replaced gel. Two of the fifteen materials, textured rubber and EPDM foam, were replaced by new pieces of the same kind before campaign D. Every CNN input is a single native 192-px crop, twelve per episode, and the logits of an episode's crops are summed. We report macro accuracy, macro-F1, and the share of test episodes assigned to the most predicted class, which exposes a collapse onto few classes. The CNN is a four-stage convolutional encoder at native resolution, trained with cross-entropy for 12 epochs (supplement). Its jitter variant adds per-channel gains ($\pm$20\pct) and a smooth multiplicative field ($\pm$15\pct) during training. Heads are MLPs on frozen embeddings with three seeds, and CNN numbers average three training seeds. Whenever test images are read relative to a state estimate, training images are read relative to the mean of the other training sessions of their hardware epoch (\cref{sec:method}); otherwise both are read raw. Sparsh~\cite{higuera2024sparsh} receives its own two-frame input (two frames of the crop, five apart). All design choices were made on this split, and \cref{sec:folds} reports every other campaign as a test set.
 
-\subsection{Material across a change of hardware}
-\label{sec:material}
+\subsection{The shortcut under control}
+\label{sec:confound}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{fig/fig_material.pdf}
-  \caption{\textbf{Material after a change of hardware.} Every encoder is near chance raw (open circles) and recovers with the previous session's state subtracted (orange; no training, no labels) or with the label-free state-swap adapter (green; no test-time data). June--July (unit 1, plus four materials on unit 2) $\rightarrow$ September--October (unit 2), 20 materials, chance 5\pct.}
-  \label{fig:material}
+  \includegraphics[width=\linewidth]{fig/fig_confound.pdf}
+  \caption{\textbf{Tying classes to hardware, under control.} SITR~\cite{sitr2025} pressed 20 objects on four GelSight Minis. We train on $20-k$ classes recorded on one Mini and $k$ classes recorded only on the test Mini, and test all classes on the test Mini. \cref{alg:tracker} reads the test images one object at a time with its causal estimate (frozen DINOv2, MLP head; mean over 12 Mini pairs and class draws, band: 10th--90th percentile over pairs).}
+  \label{fig:confound}
 \end{figure}
 
-\Cref{fig:material} and \cref{tab:material} give the main result. Raw, the supervised CNN scores \af{\SupFoneRawSAcc}{\SupFoneRawSF}\ (accuracy\,/\,macro-F1, three seeds; \SupFoneRawSTop\pct\ of episodes in one class), frozen Sparsh-DINO, -MAE and -I-JEPA \SdinoRawAcc, \MaeRawAcc\ and \IjepaRawAcc, a TactSpace replica \TactSpaceRawAcc, and native-resolution normal-map alignment---the calibration-free physics target of \cite{unipsgel2026}---\NmRawAcc, all with the same collapse. The failure is not uniform (\cref{tab:split}): the fifteen materials learned on unit 1 score \DOneSupRaw\pct\ on unit 2, the five learned on unit 2 score \DTwoSupRaw\pct\ on its replaced gel, and the class that absorbs \SupFoneRawSTop\pct\ of all episodes is one of the latter. Stream calibration with the previous session's state lifts the supervised CNN to \af{\SupFonePrevSAcc}{\SupFonePrevSF}\ and Sparsh-I-JEPA to \af{\IjepaPrevAcc}{\IjepaPrevF}\ (paired bootstrap over materials $+$\num{24.2}, 95\pct\ CI $[+8.2, +41.5]$); the gain is on the cross-unit materials (\DOneSupRaw$\rightarrow$\DOneSupPrev, bare gel \DOneSupBlank), not on the five rigid ones across the gel replacement (\DTwoSupRaw$\rightarrow$\DTwoSupPrev). Starting from the previous state and updating it online helps from the first contact (\SupFoneOnlineSAcc\pct); estimating the state from the current session alone needs 10--20 contacts and ends lower (\SupFoneOwnSAcc\pct), because the session's own mean contains the object.
+Our recordings tie each object to one hardware state, because each object was recorded in its own session. To test whether this tie causes the failure, we inject it into a dataset that does not have it. SITR~\cite{sitr2025} pressed the same 20 objects on four GelSight Minis. For a pair of Minis we train on $20-k$ classes recorded on one Mini and on $k$ classes recorded only on the other, and we test every class on the other Mini (\cref{fig:confound}). With no class tied, a frozen DINOv2 with an MLP head recognises the classes learned on the first Mini at \CfSitrRawZeroCross\pct. Tying a single class to the test Mini drops this to \CfSitrRawOneCross\pct\ on average over Mini pairs, and \CfSitrRawOneTop\pct\ of all test images fall into that one class. We then run the reading of \cref{alg:tracker} on the test Mini's stream, with the objects arriving one after another and each image read relative to the per-object estimate available before it. The reading lifts the untied case to \CfTrkSitrZeroCross\pct\ and the case with one tied class to \CfTrkSitrOneCross\pct, and it cuts the share of the tied class to \CfTrkSitrOneTop\pct. One tied class therefore still costs about 15 points after the reading, and four tied classes cost about 30 (\CfTrkSitrFourCross\pct). Re-rendering every training image under the other Mini's state does slightly better here (\CfSitrSaugOneCross\pct\ for one tied class). On Real Tactile MNIST~\cite{tactilemnist2025} we tie digits to gels instead. Tying one digit to the test gel sends \CfTmdRawOneTop\pct\ of the test touches to that digit, and the accuracy on the other digits falls from \CfTmdRawZeroCross\ to \CfTmdRawOneCross\pct. The reading restores \CfTrkTmOneCross\pct, about the raw untied level. 
 
-\begin{table}[t]
-  \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
-  \caption{Material after a change of hardware (June--July $\rightarrow$ Sep--Oct; accuracy\,/\,macro-F1 in \pct; coll.: share of episodes in the most predicted class). Prev.: previous session's state subtracted. $\dagger$: eight-frame inputs (\cref{sec:ablation}).}
-  \label{tab:material}
-  \resizebox{\linewidth}{!}{%
-  \begin{tabular}{@{}lccc@{}}
-    \toprule
-    & raw & + prev. & coll. \\
-    \midrule
-    supervised CNN (3 seeds) & \af{\SupFoneRawSAcc}{\SupFoneRawSF} & \af{\SupFonePrevSAcc}{\SupFonePrevSF} & \SupFoneRawSTop\pct \\
-    \ \ + state swap & \af{\SupSwapFoneRawAcc}{\SupSwapFoneRawF} & \af{\SupSwapFonePrevSAcc}{\SupSwapFonePrevSF} & \SupSwapFoneRawTop\pct \\
-    \ \ + photometric jitter (3 seeds) & \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF} & \textbf{\af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}} & \SupAugFoneRawSTop\pct \\
-    \ \ + session-adversarial (DANN) & \af{\DannFoneRawAcc}{\DannFoneRawF} & \af{\DannFonePrevAcc}{\DannFonePrevF} & \DannFoneRawTop\pct \\
-    TactSpace replica$^\dagger$ (2 seeds) & \TactSpaceRawAcc & -- & \TactSpaceRawTop\pct \\
-    normal-map alignment$^\dagger$ & \af{\NmRawAcc}{\NmRawF} & -- & \NmRawTop\pct \\
-    Sparsh-DINO, frozen & \af{\SdinoRawAcc}{\SdinoRawF} & \af{\SdinoPrevAcc}{\SdinoPrevF} & \SdinoRawTop\pct \\
-    Sparsh-MAE, frozen & \af{\MaeRawAcc}{\MaeRawF} & \af{\MaePrevAcc}{\MaePrevF} & \MaeRawTop\pct \\
-    Sparsh-I-JEPA, frozen & \af{\IjepaRawAcc}{\IjepaRawF} & \af{\IjepaPrevAcc}{\IjepaPrevF} & \IjepaRawTop\pct \\
-    DINOv2, frozen & \af{\DinovRawAcc}{\DinovRawF} & \af{\DinovPrevAcc}{\DinovPrevF} & \DinovRawTop\pct \\
-    \midrule
-    \multicolumn{4}{@{}l}{\emph{without labels}} \\
-    state swap, from scratch (3 seeds) & \af{\SwapFoneRawSAcc}{\SwapFoneRawSF} & -- & \SwapFoneRawSTop\pct \\
-    Sparsh-I-JEPA + adapter (3 seeds) & \af{\IjepaAdAcc}{\IjepaAdF} & \af{\IjepaAdPrevAcc}{\IjepaAdPrevF} & \IjepaAdTop\pct \\
-    \ \ with jitter positives instead & \af{\IjepaAdJitterAcc}{\IjepaAdJitterF} & \af{\IjepaAdJitterPrevAcc}{\IjepaAdJitterPrevF} & \IjepaAdJitterTop\pct \\
-    Sparsh-MAE + adapter & \af{\MaeAdAcc}{\MaeAdF} & -- & \MaeAdTop\pct \\
-    Sparsh-DINO + adapter & \af{\SdinoAdAcc}{\SdinoAdF} & -- & \SdinoAdTop\pct \\
-    \bottomrule
-  \end{tabular}}
-\end{table}
-
-\begin{table}[t]
-  \centering\footnotesize\setlength{\tabcolsep}{4pt}
-  \caption{\textbf{Fold D by hardware relation} (macro accuracy). Fifteen materials were learned on unit 1 and are tested on unit 2 (unit 2 is in the training data for the other five classes); five rigid materials were learned on unit 2 and are tested on its replaced gel.}
-  \label{tab:split}
-  \begin{tabular}{@{}lcc@{}}
-    \toprule
-    & 15 materials, other unit & 5 materials, other gel \\
-    \midrule
-    CNN, raw & \DOneSupRaw & \DTwoSupRaw \\
-    \ \ + previous session's state & \DOneSupPrev & \DTwoSupPrev \\
-    \ \ + bare gel & \DOneSupBlank & \DTwoSupBlank \\
-    CNN + jitter, raw & \DOneAugRaw & \DTwoAugRaw \\
-    \ \ + previous session's state & \DOneAugPrev & \DTwoAugPrev \\
-    Sparsh-I-JEPA frozen, raw & \DOneIjepaRaw & \DTwoIjepaRaw \\
-    \ \ + previous session's state & \DOneIjepaPrev & \DTwoIjepaPrev \\
-    \ \ + label-free adapter & \DOneIjepaAd & \DTwoIjepaAd \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\paragraph{Which estimate of the state.}
-\Cref{tab:sources} varies only the test-time estimate $\hat F$ for the trained single-frame CNNs. Any unlabelled frames of the current deployment serve: the previous session, a random other session of the test campaign, the mean field of all its sessions (twenty different objects whose imprints average out), or the bare gel, all land within \SrcSupRandAcc--\SrcSupBlankAcc\pct\ for the plain CNN and \SrcAugRandAcc--\SrcAugPrevAcc\pct\ with jitter, against \SrcSupNoneAcc\ and \SrcAugNoneAcc\ raw. The session's own contacts are the worst contact-based estimate (\SrcSupOwnAcc), because they contain the object. That the bare gel works (\SrcSupBlankAcc) means standard flat-fielding is a valid estimate of the state where blank frames exist; the contact stream gives an equivalent one where they do not, which is the case for every archive and for our training campaigns. The spatially varying low-frequency field does most of the work (\SrcSupLowpassAcc); a single colour per session recovers part of it (\SrcSupMeancolAcc); re-centring in feature space does not (\SrcSupFeatAcc). The fine-scale part of the field adds a few points for the jitter model and none for the plain one.
-
-\begin{table}[t]
-  \centering\footnotesize\setlength{\tabcolsep}{4pt}
-  \caption{\textbf{Test-time estimate of the state} (supervised single-frame CNN, with and without photometric jitter; accuracy\,/\,macro-F1 on campaign D). Every estimate comes from unlabelled frames of the deployment.}
-  \label{tab:sources}
-  \begin{tabular}{@{}lcc@{}}
-    \toprule
-    estimate of $\hat F$ & CNN & CNN + jitter \\
-    \midrule
-    none & \af{\SrcSupNoneAcc}{\SrcSupNoneF} & \af{\SrcAugNoneAcc}{\SrcAugNoneF} \\
-    feature-space mean of the previous session & \af{\SrcSupFeatAcc}{\SrcSupFeatF} & \af{\SrcAugFeatAcc}{\SrcAugFeatF} \\
-    mean colour of the previous session & \af{\SrcSupMeancolAcc}{\SrcSupMeancolF} & \af{\SrcAugMeancolAcc}{\SrcAugMeancolF} \\
-    low-pass field of the previous session & \af{\SrcSupLowpassAcc}{\SrcSupLowpassF} & \af{\SrcAugLowpassAcc}{\SrcAugLowpassF} \\
-    own session's other contacts & \af{\SrcSupOwnAcc}{\SrcSupOwnF} & \af{\SrcAugOwnAcc}{\SrcAugOwnF} \\
-    previous session's contacts & \af{\SrcSupPrevAcc}{\SrcSupPrevF} & \textbf{\af{\SrcAugPrevAcc}{\SrcAugPrevF}} \\
-    a random other session's contacts & \af{\SrcSupRandAcc}{\SrcSupRandF} & \af{\SrcAugRandAcc}{\SrcAugRandF} \\
-    the session's bare gel & \textbf{\af{\SrcSupBlankAcc}{\SrcSupBlankF}} & \af{\SrcAugBlankAcc}{\SrcAugBlankF} \\
-    all sessions of the campaign & \af{\SrcSupCampAcc}{\SrcSupCampF} & \af{\SrcAugCampAcc}{\SrcAugCampF} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\paragraph{Photometric jitter.} Standard photometric augmentation (per-channel gain $\pm$20\pct\ and a smooth multiplicative field $\pm$15\pct) is, with single-frame inputs, a strong baseline on its own: \af{\SupAugFoneRawSAcc}{\SupAugFoneRawSF}\ raw (three seeds, $\pm$\SupAugFoneRawSAccSd) and \af{\SupAugFonePrevSAcc}{\SupAugFonePrevSF}\ with the previous session's state---the best deployable pipeline when labels are available. It is a regulariser against the state rather than a better representation: on the same-state folds of \cref{sec:timeorstate} it adds \num{-3} to \num{+7} points instead of \num{28}; on a balanced training set it absorbs the state change on its own (\cref{sec:timeorstate}); and on eight-frame inputs, where the fine-scale state is easier to learn, it gives only \SupAugRawSAcc\ raw (\cref{sec:ablation}).
-
-\paragraph{Without labels.} The label-free state-swap adapter needs neither labels nor test-time data: it lifts frozen Sparsh-I-JEPA to \af{\IjepaAdAcc}{\IjepaAdF}\ (three seeds, $\pm$\IjepaAdAccSd; $+$\num{24.0} $[+13.9, +35.9]$), Sparsh-MAE to \MaeAdAcc\ and Sparsh-DINO to \SdinoAdAcc, with the era probe falling from \num{77}--\num{79} to \num{66}--\num{69}. The state swap is what gives the gain: the same adapter trained with photometric-jitter positives instead reaches \IjepaAdJitterAcc\pct. On the general-vision DINOv2~\cite{oquab2024dinov2} the adapter adds only \num{3.8} $[-4.3,+11.5]$: the objective reorganises what tactile pretraining already holds. Trained from scratch, the objective is a weak representation on its own (\af{\SwapFoneRawSAcc}{\SwapFoneRawSF}, three seeds; \HoldSwapRawAcc\pct\ even within a campaign): its value is on top of a pretrained encoder. It is the best option without labels; with labels, jitter and calibration do better.
-
-\paragraph{Adaptation baselines.}
-AdaBN~\cite{li2018adabn} re-estimated over the whole test campaign reaches \SupFoneAdaAcc\pct\ for the single-frame supervised CNN, close to calibration on this split---but it pools 20 objects into one statistic, and on the other folds it moves by \num{-25} to \num{+4} (\cref{sec:timeorstate}). Re-estimated per session, which is what a robot has, it gives \SupFoneAdaSessAcc\pct\ for the supervised CNN and 3--9\pct\ for every other model: with one object per session the statistics absorb the object. A session-adversarial head (DANN~\cite{ganin2016dann}, gradient reversal on the session identity) changes nothing (\cref{tab:material}): session identity is not what the encoder uses, the state is.
-
-\paragraph{With a few target labels.}
-Calibration stacks with labels. Adding 1\pct\ of the test campaign's episodes to the head's training set gives \SupFoneRawFSOne\pct\ raw and \SupFonePrevFSOne\pct\ calibrated; 5\pct: \SupFoneRawFSFive\ and \SupFonePrevFSFive; 10\pct: \SupFoneRawFSTen\ and \SupFonePrevFSTen. Two of the twenty materials were replaced by new pieces of the same kind before campaign D (textured rubber, EPDM foam); excluding them, the raw jitter CNN scores \SupAugFoneRawEighteen\pct\ (18-way).
-
-\subsection{Leave one campaign out}
-\label{sec:timeorstate}
+The additive corrections have a limit. A CNN trained from scratch on either confounded set still collapses, and on SITR it scores \CfSitrCnnRawCross\pct\ on the other classes raw and \CfSitrCnnSaugCross\pct\ with state augmentation. SITR's Minis differ in more than an additive image, because they see different parts of their gels and differ in contrast by a factor of \SmContrastRatio\ (supplement). A CNN trained to tell two Minis apart still does so for \UpSitrRead\pct\ of the images of unseen objects after the reading, and one trained on Tactile MNIST's two gels for \UpTmnistRead\pct. For our two units the same test falls from \UpOursRaw\pct\ raw to \UpOursRead\pct\ after the reading, where chance is 50\pct. On our data the hardware differs mostly by an additive image, while on these two public sets it also differs in ways the reading does not remove.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
-  \caption{\textbf{Each campaign held out in turn} (single frames; macro accuracy). Prev.\,/\,own: previous session's\,/\,own session's state subtracted; AdaBN over the test campaign\,/\,per session. ``Subtracted inputs'': encoder trained on state-subtracted inputs (the bare gel for D's sessions, the previous session elsewhere). Fold D's ``own'' column for that model uses the bare gel.}
-  \label{tab:rotation}
+  \caption{\textbf{Material after a change of hardware} on our recordings. Train June--July, test September--October (20 materials, chance 5\pct). All: accuracy\,/\,macro-F1. Other unit: the 15 materials learned on unit~1. Other gel: the 4 learned on unit~2 before its gel was replaced. Top: share of episodes in the most predicted class. Rows marked $^\ast$ are non-causal or use a session picked by hand.}
+  \label{tab:material}
   \resizebox{\linewidth}{!}{%
-  \begin{tabular}{@{}lccccc@{}}
+  \begin{tabular}{@{}lcccc@{}}
     \toprule
-    & raw & + prev. & + own & AdaBN & /session \\
+    model and reading of the test images & all & other unit & other gel & top \\
     \midrule
-    \multicolumn{6}{@{}l}{\emph{test A (June, 15 materials) --- train B+C+D; same state as B and C}} \\
-    CNN & \FoldASupRawAcc & \FoldASupPrevAcc & \FoldASupOwnAcc & \FoldASupAdaAcc & \FoldASupAdaSessAcc \\
-    CNN + jitter & \FoldAAugRawAcc & \FoldAAugPrevAcc & \FoldAAugOwnAcc & \FoldAAugAdaAcc & \FoldAAugAdaSessAcc \\
-    CNN, subtracted inputs & -- & \FoldAAutoPrevAcc & \FoldAAutoOwnAcc & \FoldAAutoAdaAcc & \FoldAAutoAdaSessAcc \\
-    Sparsh-I-JEPA, frozen & \FoldAIjepaRawAcc & \FoldAIjepaPrevAcc & -- & -- & -- \\
+    CNN, raw & \af{\SrcSupNoneAcc}{\SrcSupNoneF} & \DOneSupRaw & \DTwoSupRaw & \SrcSupNoneTop \\
+    \ \ AdaBN per hardware state$^\ast$~\cite{li2018adabn} & \af{\TtaSupAdabnEpochsAcc}{\TtaSupAdabnEpochsF} & \DOneTtaSupAdabnEpochs & \DTwoTtaSupAdabnEpochs & \TtaSupAdabnEpochsTop \\
+    \ \ TENT, mixed batches$^\ast$~\cite{wang2021tent} & \af{\TtaSupTentIidAcc}{\TtaSupTentIidF} & \DOneTtaSupTentIid & \DTwoTtaSupTentIid & \TtaSupTentIidTop \\
+    \ \ LAME~\cite{boudiaf2022lame} & \af{\TtaSupLameAcc}{\TtaSupLameF} & \DOneTtaSupLame & \DTwoTtaSupLame & \TtaSupLameTop \\
+    \ \ RoTTA, ordered stream~\cite{yuan2023rotta} & \af{\TtaSupRottaAcc}{\TtaSupRottaF} & \DOneTtaSupRotta & \DTwoTtaSupRotta & \TtaSupRottaTop \\
+    \ \ $-$ previous session's state$^\ast$ & \af{\FoDSupPrevSessStateAcc}{\FoDSupPrevSessStateF} & \FoDSupPrevSessStateOne & \FoDSupPrevSessStateTwo & \FoDSupPrevSessStateTop \\
+    \ \ $-$ a bare-gel frame of the session$^\ast$ & \af{\FoDSupBareStateAcc}{\FoDSupBareStateF} & \FoDSupBareStateOne & \FoDSupBareStateTwo & \FoDSupBareStateTop \\
+    \ \ $-$ mean of the test state's images$^\ast$ & \af{\FoDSupStateMeanStateAcc}{\FoDSupStateMeanStateF} & \FoDSupStateMeanStateOne & \FoDSupStateMeanStateTwo & \FoDSupStateMeanStateTop \\
+    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\FoDSupTrkStateAcc}{\FoDSupTrkStateF}} & \FoDSupTrkStateOne & \FoDSupTrkStateTwo & \FoDSupTrkStateTop \\
+    \ \ $-$ \cref{alg:tracker}, test images only & \af{\FoDSupRawHeadAcc}{\FoDSupRawHeadF} & \FoDSupRawHeadOne & \FoDSupRawHeadTwo & \FoDSupRawHeadTop \\
+    CNN, instance-normalised input & \af{\FoDInstSupRawAcc}{\FoDInstSupRawF} & \FoDInstSupRawOne & \FoDInstSupRawTwo & \FoDInstSupRawTop \\
+    CNN, high-pass input & \af{\FoDHpSupRawAcc}{\FoDHpSupRawF} & \FoDHpSupRawOne & \FoDHpSupRawTwo & \FoDHpSupRawTop \\
+    CNN + Fourier domain adaptation~\cite{fda2020} & \af{\FoDFdaSupRawAcc}{\FoDFdaSupRawF} & \FoDFdaSupRawOne & \FoDFdaSupRawTwo & \FoDFdaSupRawTop \\
+    CNN + state augmentation, raw & \af{\FoDSaugSupRawAcc}{\FoDSaugSupRawF} & \FoDSaugSupRawOne & \FoDSaugSupRawTwo & \FoDSaugSupRawTop \\
+    \ \ $-$ \cref{alg:tracker} & \af{\FoDSaugSupTrkStateAcc}{\FoDSaugSupTrkStateF} & \FoDSaugSupTrkStateOne & \FoDSaugSupTrkStateTwo & \FoDSaugSupTrkStateTop \\
     \midrule
-    \multicolumn{6}{@{}l}{\emph{test B (July, same 15) --- train A+C+D; same state as A and C}} \\
-    CNN & \FoldBSupRawAcc & \FoldBSupPrevAcc & \FoldBSupOwnAcc & \FoldBSupAdaAcc & \FoldBSupAdaSessAcc \\
-    CNN + jitter & \FoldBAugRawAcc & \FoldBAugPrevAcc & \FoldBAugOwnAcc & \FoldBAugAdaAcc & \FoldBAugAdaSessAcc \\
-    CNN, subtracted inputs & -- & \FoldBAutoPrevAcc & \FoldBAutoOwnAcc & \FoldBAutoAdaAcc & \FoldBAutoAdaSessAcc \\
-    Sparsh-I-JEPA, frozen & \FoldBIjepaRawAcc & \FoldBIjepaPrevAcc & -- & -- & -- \\
-    \midrule
-    \multicolumn{6}{@{}l}{\emph{test C (July, 5 materials seen once, in D, on the other gel) --- train A+B+D}} \\
-    CNN & \FoldCSupRawAcc & \FoldCSupPrevAcc & \FoldCSupOwnAcc & \FoldCSupAdaAcc & \FoldCSupAdaSessAcc \\
-    CNN + jitter & \FoldCAugRawAcc & \FoldCAugPrevAcc & \FoldCAugOwnAcc & \FoldCAugAdaAcc & \FoldCAugAdaSessAcc \\
-    CNN, subtracted inputs & -- & \FoldCAutoPrevAcc & \FoldCAutoOwnAcc & \FoldCAutoAdaAcc & \FoldCAutoAdaSessAcc \\
-    Sparsh-I-JEPA, frozen & \FoldCIjepaRawAcc & \FoldCIjepaPrevAcc & -- & -- & -- \\
-    \midrule
-    \multicolumn{6}{@{}l}{\emph{test D (Sep--Oct, 20 materials, unseen state) --- train A+B+C}} \\
-    CNN & \FoldDSupRawAcc & \FoldDSupPrevAcc & \FoldDSupOwnAcc & \FoldDSupAdaAcc & \FoldDSupAdaSessAcc \\
-    CNN + jitter & \FoldDAugRawAcc & \FoldDAugPrevAcc & \FoldDAugOwnAcc & \FoldDAugAdaAcc & \FoldDAugAdaSessAcc \\
-    CNN, subtracted inputs & -- & \FoldDAutoPrevAcc & \FoldDAutoOwnAcc & \FoldDAutoAdaAcc & -- \\
-    Sparsh-I-JEPA, frozen & \IjepaRawAcc & \IjepaPrevAcc & \IjepaOwnAcc & -- & -- \\
+    CNN + jitter, raw & \af{\SrcAugNoneAcc}{\SrcAugNoneF} & \DOneAugRaw & \DTwoAugRaw & \SrcAugNoneTop \\
+    \ \ AdaBN per hardware state$^\ast$ & \af{\TtaAugAdabnEpochsAcc}{\TtaAugAdabnEpochsF} & \DOneTtaAugAdabnEpochs & \DTwoTtaAugAdabnEpochs & \TtaAugAdabnEpochsTop \\
+    \ \ LAME & \af{\TtaAugLameAcc}{\TtaAugLameF} & \DOneTtaAugLame & \DTwoTtaAugLame & \TtaAugLameTop \\
+    \ \ RoTTA & \af{\TtaAugRottaAcc}{\TtaAugRottaF} & \DOneTtaAugRotta & \DTwoTtaAugRotta & \TtaAugRottaTop \\
+    \ \ $-$ previous session's state$^\ast$ & \af{\FoDAugPrevSessStateAcc}{\FoDAugPrevSessStateF} & \FoDAugPrevSessStateOne & \FoDAugPrevSessStateTwo & \FoDAugPrevSessStateTop \\
+    \ \ $-$ \cref{alg:tracker} & \textbf{\af{\FoDAugTrkStateAcc}{\FoDAugTrkStateF}} & \FoDAugTrkStateOne & \FoDAugTrkStateTwo & \FoDAugTrkStateTop \\
+    CNN + jitter + state augmentation, raw & \af{\FoDSaugAugRawAcc}{\FoDSaugAugRawF} & \FoDSaugAugRawOne & \FoDSaugAugRawTwo & \FoDSaugAugRawTop \\
+    \ \ $-$ \cref{alg:tracker} & \af{\FoDSaugAugTrkStateAcc}{\FoDSaugAugTrkStateF} & \FoDSaugAugTrkStateOne & \FoDSaugAugTrkStateTwo & \FoDSaugAugTrkStateTop \\
     \bottomrule
   \end{tabular}}
 \end{table}
 
-\Cref{tab:rotation} holds out each campaign in turn. In folds A and B every test material has a session on the same unit and gel in the training data (A and B are both S1). In fold C, four of the five test materials were learned on gel 3 and are tested on gel 2 of the same unit, with gel 2 in the training data for the other fifteen classes; the fifth (wood) was learned on unit 2 and is tested on unit 1. Fold D is the deployment case above. Three things follow.
+\subsection{Material after a change of hardware}
+\label{sec:material}
 
-\emph{Time is not the cause.} Sessions the model never saw, recorded weeks apart on the same hardware, are recognised at \FoldASupRawAcc--\FoldBAugRawAcc\pct\ raw (A, B); the state itself is unchanged after three months (\HwMonths\ in the fine band, \LpDistStwoJulSep\ grey levels in the illumination field). The failure is the change of hardware, and it has a target: the three-campaign model learned the second unit on four rigid materials, so under that unit's state everything looks like them (one of them absorbs \SupFoneRawSTop\pct\ of the later campaign). Subtracting the state undoes exactly that. No material was recorded on the same hardware months apart, so the months-later claim is made for the state, not for a classifier.
+\Cref{tab:material} shows the same failure on our recordings. Read raw, the CNN scores \SrcSupNoneAcc\pct\ and puts \SrcSupNoneTop\pct\ of the test episodes into a single class, one of the four materials it saw on unit 2. The fifteen materials it learned on unit 1 score \DOneSupRaw\pct. Frozen Sparsh encoders collapse in the same way (\cref{tab:encoders}), and a linear probe on their features tells the two units apart from a single crop at \ProbeIjepaRawUnit--\ProbeSdinoRawUnit\pct\ (supplement). The jitter CNN collapses much less and scores \SrcAugNoneAcc\pct.
 
-\emph{State subtraction pays where the test classes were never seen in the test state.} In D it undoes the cross-unit collapse (\DOneSupRaw$\rightarrow$\DOneSupPrev--\DOneSupBlank\ on the fifteen materials). In A and B, where every test class was seen on the test hardware, every estimate is neutral to harmful (\num{-10} to \num{+3}): the training-mean state is then a mixture no real session has. Across the gel replacement---the five rigid materials in fold D (\DTwoSupRaw$\rightarrow$\DTwoSupPrev) and the four in fold C (\FoldCSupRawAcc$\rightarrow$\FoldCSupPrevAcc)---nothing in the state family helps and frozen Sparsh is at chance. The force result says a new gel changes mechanics; the materials concerned are also the five rigid ones, whose fine texture is weakest (own-session pattern 0.17), and the data cannot separate the two. The method is a fix for a rendering state that the test classes were never imaged in, and nothing more.
+Reading the images relative to the state removes most of the collapse. With \cref{alg:tracker} the CNN reaches \FoDSupTrkStateAcc\pct\ (paired bootstrap over materials against raw, $+$\FoDSupCiLo\ to $+$\FoDSupCiHi\ points), and the jitter CNN \FoDAugTrkStateAcc\pct. This matches a bare-gel frame recorded in the same session (\FoDSupBareStateAcc\pct). That reading places the session's bare gel relative to the mean contact field of the whole test campaign, so it is not causal (supplement), and it exists only for campaign D, the first campaign in which we recorded bare-gel frames. Over test materials, the difference between the two lies between $\FoDSupCiVsBareLo$ and $+$\FoDSupCiVsBareHi\ points. The previous session's state, picked by hand, gives \FoDSupPrevSessStateAcc\pct\ for the CNN. For the jitter CNN it does slightly better than the tracker (\FoDAugPrevSessStateAcc\pct), because a session recorded just before shares the day's illumination. State augmentation alone, with raw test images, raises the CNN to \FoDSaugSupRawAcc\pct\ and the jitter CNN to \FoDSaugAugRawAcc\pct. It is the option when no estimate of the state is available at test time, but it adds nothing on top of the reading (\FoDSaugSupTrkStateAcc\ and \FoDSaugAugTrkStateAcc\pct). Two further readings show where the gain comes from. The mean of all test images of each hardware state, which needs the whole test campaign in advance, gives \FoDSupStateMeanStateAcc\pct, so the online estimate loses nothing to it. Reading only the test images, with heads fitted on raw training images, gives \FoDSupRawHeadAcc\pct, so most of the gain comes at test time.
 
-\emph{The subtraction belongs at test time.} Training the encoder on state-subtracted inputs is worse than raw training with test-time subtraction in every fold (\FoldAAutoPrevAcc\ vs \FoldASupRawAcc, \FoldBAutoPrevAcc\ vs \FoldBSupRawAcc, \FoldCAutoPrevAcc\ vs \FoldCSupRawAcc, \FoldDAutoOwnAcc\ vs \SrcSupBlankAcc): the encoder is better off seeing real states. Photometric jitter is the most robust single choice---best, or within three points of the best raw model, in every fold, and the only thing that helps across the gel. Whole-campaign AdaBN moves by \num{-25} to \num{+4} across folds; per session it collapses in every one. Eight-frame integration hurts in the same-state case too (train A+C, test B: \HoldFeightRawAcc\ vs \HoldSupRawAcc\ for single frames): what it exposes is the session-level part of the state (own session \SigCOwn\ vs other sessions of the campaign \SigSameEraOtherDay\ in \cref{fig:signature}), which every new session changes.
+Three corrections that need no estimate of the state help less. Normalising each input image, training on its high-pass part, or swapping low spatial frequencies between training images~\cite{fda2020} raises the CNN to between \FoDFdaSupRawAcc\ and \FoDInstSupRawAcc\pct, and each still puts a fifth or more of the episodes into one class. None of them removes the fine pattern of the state, which lies inside the pass band of the high-pass input. Each of these models gains another 7 to 15 points when its test images are read with \cref{alg:tracker} (\FoDFdaSupTrkStateAcc\ to \FoDHpSupTrkStateAcc\pct).
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.8\linewidth]{fig/fig_time_gap.pdf}
-  \caption{\textbf{Weeks on the same hardware vs.\ months on another unit.} Same 15 materials, trained on June only (unit 1; supervised CNN, single frames), tested two to three weeks later on the same unit and gel and three to four months later on the other unit, raw and with the previous session's state subtracted.}
-  \label{fig:timegap}
-\end{figure}
+The adaptation baselines also do less. Re-estimating BatchNorm statistics per hardware state reaches \TtaSupAdabnEpochsAcc\pct\ even with the true change dates and all of the state's test images, and the tracker's advantage over it lies between $+$\FoDSupCiVsAdabnLo\ and $+$\FoDSupCiVsAdabnHi\ points over test materials. TENT reaches \TtaSupTentIidAcc\pct\ when given mixed batches that a robot would not have, and it collapses (\TtaSupTentAcc\pct) on the robot's stream, where each batch holds one object. LAME, which smooths predictions over neighbouring test samples, gives \TtaSupLameAcc\pct. RoTTA, which was designed for temporally correlated test streams, gives \TtaSupRottaAcc\pct\ for the CNN and \TtaAugRottaAcc\pct\ for the jitter CNN, and still puts \TtaSupRottaTop\pct\ of the CNN's episodes into one class. Label-shift correction lowers the accuracy to \TtaSupLabelshiftAcc\pct, because it finds the absorbing class frequent. These methods assume that a batch mixes classes or that the class priors carry the shift, and one object per session breaks both assumptions~\cite{burns2021bn,gong2022note}.
 
-\Cref{fig:timegap} shows the same with one training set. Trained on June alone, the same 15 materials are recognised at \GapFoneSupBRawAcc\pct\ two to three weeks later on the same hardware and \GapFoneSupDRawAcc\pct\ on the other unit. This training set holds every material in a single session on one unit and does not collapse on the other (\GapFoneSupDRawTop\pct\ of episodes in one class, against \SupFoneRawSTop\pct), and calibration adds \num{12} points on the same hardware but nothing across the units (\GapFoneSupDPrevAcc\pct). The large calibration gains in \cref{tab:material} are gains against the collapse; a representation that has not collapsed keeps \num{37}--\num{43}\pct\ with or without it.
+\paragraph{Other encoders.}
+\Cref{tab:encoders} repeats the main comparison with other encoders. An ImageNet-pretrained ResNet-18 fine-tuned on the same crops collapses less than our CNN (\FoDResRawAcc\pct). Read with \cref{alg:tracker} it reaches \FoDResTrkStateAcc\pct, and \FoDResRawHeadAcc\pct\ when only the test images are read. For this encoder, reading the training images relative to the mean of their hardware hurts, and we have not found out why. Frozen DINOv2 rises from \DinovRawAcc\ to \DinovTrkStAcc\pct, and the frozen Sparsh encoders from \SdinoRawAcc--\IjepaRawAcc\ to \SdinoTrkStAcc--\IjepaTrkStAcc\pct. For the Sparsh encoders the four rigid materials of the replaced gel almost vanish after the reading (\DTwoMaeTrkSt--\DTwoIjepaTrkSt\pct). Their training images are read relative to the mean of only three other sessions on their hardware, an estimate that still carries those objects' imprints. Run in their own protocol, on whole frames at 224\,px with a background subtracted, the Sparsh encoders do worse on our materials and still collapse. With the session's bare-gel frame as the background, as Sparsh's pipeline uses it, Sparsh-I-JEPA scores \SnIjepaBlankAcc\pct\ and puts \SnIjepaBlankTop\pct\ of the episodes into one class. With \cref{alg:tracker}'s estimate as the background it scores \SnIjepaStateAcc\pct\ (supplement).
 
-\paragraph{Training-set structure.}
-Removing the second unit's July sessions from training removes the collapse. Trained on A+B (unit 1 only, every material in two sessions) the plain CNN scores \TsABSupRawAcc\pct\ raw on D, \TsABSupPrevAcc\ with the previous session's state and \TsABSupOwnAcc\ with the session's own contacts; with jitter \TsABAugRawAcc\ raw and \TsABAugPrevAcc\ calibrated. Trained on A+C (one session per material, unit 2 present for four classes) it collapses again: \TsACSupRawAcc\ raw, \TsACSupPrevAcc\ calibrated. On the 13 materials common to every split (the A/B materials minus the two replaced pieces), the change of unit costs the plain CNN 15 points (\ThirteenAtoBRaw\ on the same hardware $\rightarrow$ \ThirteenABtoDRaw), of which the state estimate recovers 9--17 (\ThirteenABtoDPrev--\ThirteenABtoDOwn); the jitter CNN keeps \ThirteenABtoDAugRaw\ raw, the same-hardware raw level, and gains nothing from calibration; the three-campaign CNN falls to \ThirteenABCtoDRaw\ and recovers to \ThirteenABCtoDPrev--\ThirteenABCtoDBlank. State subtraction is thus the fix for a collapse that any training set invites in which some classes identify a hardware state---and one session per object is how tactile datasets are recorded; for a training set on one unit, photometric jitter alone absorbs the change of unit and the estimate adds 9--17 points to a plain CNN.
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{3pt}
+  \caption{\textbf{Other encoders} on the split of \cref{tab:material} (accuracy\,/\,top-class share). Frozen encoders read the same native crops as the CNN, except the last three rows, which run Sparsh in its own protocol: whole frames at 224\,px, two frames five apart, with the background subtracted. There, the reading's background is \cref{alg:tracker}'s estimate on whole frames.}
+  \label{tab:encoders}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    encoder & raw & $-$ \cref{alg:tracker} & $-$ \cref{alg:tracker}, test only \\
+    \midrule
+    ResNet-18, ImageNet, fine-tuned~\cite{he2016resnet} & \af{\FoDResRawAcc}{\FoDResRawTop} & \af{\FoDResTrkStateAcc}{\FoDResTrkStateTop} & \af{\FoDResRawHeadAcc}{\FoDResRawHeadTop} \\
+    DINOv2, frozen~\cite{oquab2024dinov2} & \af{\DinovRawAcc}{\DinovRawTop} & \af{\DinovTrkStAcc}{\DinovTrkStTop} & -- \\
+    Sparsh-I-JEPA, frozen & \af{\IjepaRawAcc}{\IjepaRawTop} & \af{\IjepaTrkStAcc}{\IjepaTrkStTop} & -- \\
+    Sparsh-DINO, frozen & \af{\SdinoRawAcc}{\SdinoRawTop} & \af{\SdinoTrkStAcc}{\SdinoTrkStTop} & -- \\
+    Sparsh-MAE, frozen & \af{\MaeRawAcc}{\MaeRawTop} & \af{\MaeTrkStAcc}{\MaeTrkStTop} & -- \\
+    \midrule
+    Sparsh-I-JEPA, own protocol & \af{\SnIjepaRawAcc}{\SnIjepaRawTop} & \af{\SnIjepaStateAcc}{\SnIjepaStateTop} & -- \\
+    Sparsh-DINO, own protocol & \af{\SnSdinoRawAcc}{\SnSdinoRawTop} & \af{\SnSdinoStateAcc}{\SnSdinoStateTop} & -- \\
+    Sparsh-MAE, own protocol & \af{\SnMaeRawAcc}{\SnMaeRawTop} & \af{\SnMaeStateAcc}{\SnMaeStateTop} & -- \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
 
-\subsection{Normal force: geometry survives, appearance does not}
-\label{sec:force}
+\subsection{Every campaign as a test set}
+\label{sec:folds}
+\label{sec:timeorstate}
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{fig/fig_force.pdf}
-  \caption{\textbf{Force across hardware needs geometry against the unloaded gel.} $R^2$ of log normal force on the later campaign.}
-  \label{fig:force}
-\end{figure}
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
+  \caption{\textbf{Each campaign held out in turn} (accuracy, 20-way). In A and B every test material was learned on the test hardware. In C, four test materials were learned on the other gel and wood on the other unit. D is the split of \cref{tab:material}. Training seeds per fold: A \FoASupRawN, B \FoBSupRawN, C \FoCSupRawN, D \FoDSupRawN.}
+  \label{tab:rotation}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    test campaign & A & B & C & D \\
+    \midrule
+    CNN, raw & \FoASupRawAcc & \FoBSupRawAcc & \FoCSupRawAcc & \FoDSupRawAcc \\
+    \ \ $-$ \cref{alg:tracker} & \FoASupTrkStateAcc & \FoBSupTrkStateAcc & \FoCSupTrkStateAcc & \FoDSupTrkStateAcc \\
+    \ \ state-augmented, $-$ \cref{alg:tracker} & \FoASaugSupTrkStateAcc & \FoBSaugSupTrkStateAcc & \FoCSaugSupTrkStateAcc & \FoDSaugSupTrkStateAcc \\
+    CNN + jitter, raw & \FoAAugRawAcc & \FoBAugRawAcc & \FoCAugRawAcc & \FoDAugRawAcc \\
+    \ \ $-$ \cref{alg:tracker} & \FoAAugTrkStateAcc & \FoBAugTrkStateAcc & \FoCAugTrkStateAcc & \FoDAugTrkStateAcc \\
+    \ \ state-augmented, $-$ \cref{alg:tracker} & \FoASaugAugTrkStateAcc & \FoBSaugAugTrkStateAcc & \FoCSaugAugTrkStateAcc & \FoDSaugAugTrkStateAcc \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-Normal force cannot be read from appearance across a change of hardware: whole-frame representations trained on native frames---label-free, supervised, and with the force signal in the objective---reach $R^2\le\ForceLearnedBestR$ on the later campaign, and model-free deformation statistics against a fresh bare-gel frame reach \num{0.22}. Marker spreading against the bare-gel marker grid does transfer (\cref{fig:force}): within a session the affine divergence tracks the Nano17 force at Spearman \ForceWithinRho; a linear map of three affine statistics fitted on the first 13 sessions of campaign D predicts the last 7 at $R^2$ \ForceGeomFreshR\ ($r$ \ForceGeomFreshC) with a fresh grid and \ForceGeomPrevR\ ($r$ \ForceGeomPrevC) with the previous session's grid; fitted on June--July with a single bare-gel grid borrowed from September, it predicts September--October at $R^2$ \ForceGeomXeraR\ ($r$ \ForceGeomXeraC). A new gel keeps the force ranking ($r\approx0.70$) but changes the force-to-displacement scale: a gel replacement changes mechanics as well as rendering, and absolute force needs one scale calibration per gel.
+\Cref{tab:rotation} holds out each campaign in turn and reads every test campaign with \cref{alg:tracker}. Where the test hardware was seen in training for every test material (folds A and B), the reading neither helps nor costs much. An earlier version read each training image relative to the previous session, a single object sometimes on other hardware, and lost up to ten points here, which the same-hardware reference removes. State augmentation is mixed across folds. It helps the plain CNN where its test classes were learned on other hardware (fold C, \FoCSupTrkStateAcc\ to \FoCSaugSupTrkStateAcc\pct), costs a few points on known hardware, and hurts the jitter CNN in fold C. The gain in fold D is a gain against the shortcut. Trained on A and B alone, with all fifteen of their materials on unit 1, the CNN collapses less on D (\TsABSupRawAcc\pct\ raw over all 20 test materials, at most 75\pct\ possible). Trained on June alone, with one session per material, it scores \GapFoneSupBRawAcc\pct\ on its fifteen materials weeks later on the same unit and \GapFoneSupDRawAcc\pct\ on the other unit. Neither the session's own state (\GapFoneSupDOwnAcc\pct) nor the previous session's (\GapFoneSupDPrevAcc\pct) recovers this loss. Trained on June and July, with two sessions per material on unit 1, and read with \cref{alg:tracker}, the CNN recognises the same materials on the other unit at \FoDSupTrkStateOne\pct. A second session per material and the reading together recover much of the loss.
 
-\subsection{Contact}
-\label{sec:contact}
-Contact detectors trained on frozen whole-frame features on the seven lead-in sessions detect contact in the other sessions at $\ge$98\pct\ recall but reject \ContactRawSpec\pct\ of those sessions' bare-gel frames: another session's unloaded gel looks like contact. Referencing the embedding to the session's own bare gel restores \ContactRefSpec\pct\ specificity at \ContactRefRecall\pct\ recall (differencing the raw frame against the blank: \ContactBlankdiffSpec\pct). The unloaded state is the reference for contact as for force.
+\paragraph{A test written down in advance.}
+Every design choice above was made on the split that tests on campaign D. Before training any model for it, we wrote down a reversed test with its settings and three predictions, and committed them to the paper's repository (supplement). The models train on campaigns C and D and are tested on A and B. The fifteen A and B materials were recorded on unit 1, where the training data hold only wood. The detector's thresholds come from the training data's largest hardware state, and every other setting stayed as it was. We predicted that the plain CNN would collapse onto wood, that \cref{alg:tracker} would raise its accuracy and lower the share of the top class, and that the jitter CNN would collapse less and gain less. All three held. Read raw, the plain CNN scores \FoABRevSupRawAcc\pct\ on the fifteen materials and puts \RevSupWoodShare\pct\ of the test episodes into wood. With \cref{alg:tracker} it reaches \FoABRevSupTrkStateAcc\pct\ ($+$\FoABRevSupCiLo\ to $+$\FoABRevSupCiHi\ points over test materials). AdaBN on all test images reaches \RevSupAdabnAcc\pct, and on this split the difference between the two is not significant ($\RevSupCiVsAdabnLo$ to $+$\RevSupCiVsAdabnHi\ points). The jitter CNN rises from \FoABRevAugRawAcc\ to \FoABRevAugTrkStateAcc\pct. The accuracy stays low because fourteen of the fifteen test materials were learned only on the other unit, two to three months later, which is the loss that no state estimate recovered in the June experiment above.
 
-\subsection{Second unit}
+\paragraph{The gel replacement.}
+In fold C the reading helps the jitter CNN (\FoCAugRawAcc\ to \FoCAugTrkStateAcc\pct) but not the plain CNN. To test whether the change of gel is additive, we re-rendered the gel-2 test crops of the four rigid materials under the state of gel 3, measured from bare-gel frames alone. This raises them from \GelRrCSupRaw\ to \GelRrCSupRr\pct\ for the plain CNN, so the gel change is largely additive. The tracker fails there because fold C's test sessions are the first on their hardware, so it has almost no other objects to average. In fold D the same four materials score well raw only because the collapse sends many episodes to them (precision \GelRrDSupPrecCork\ and \GelRrDSupPrecFiber\pct\ for cork and fibreglass). Their F1, which also counts the episodes wrongly sent to them, rises with the reading from \FoDSupRawTwoF\ to \FoDSupTrkStateTwoF\ for the CNN, while their accuracy falls.
+
+\subsection{The tracker on the stream}
+\label{sec:trackerexp}
+
+Run over all \EpRecorded\ episodes in recording order, the detector raises \FrAlarms\ alarms: \FrUnitLatency\ episodes after the change of unit, \FrGelLatency\ episodes after the gel replacement, and \FrFalseAlarms\ false ones, in the second September session after the summer break and on the day before the gel replacement. On streams spliced from four datasets, with thresholds set on one unit of each and nothing tuned on change points, it detects \TeOursFramesDet\pct\ of the changes from our recordings (\TeOursFramesUnitDet\pct\ of those involving the other unit and \TeOursFramesGelDet\pct\ of the gel changes on the same unit). On the public datasets it detects \TePubDetMin--\TePubDetMax\pct, with at most \TePubFaMax\ false alarms per 1{,}000 items (supplement). Our first implementation computed the statistics on the sparse material crops and missed the change of unit. We moved to whole frames after this failure and kept the rule, so the real-stream result is not an independent test, while the spliced public streams are.
+
+A running mean must either restart at a change or forget old objects. Never restarted, it reads the September sessions against a mixture of both units, and the CNN reaches \SrcSupNoResetAcc\pct. A mean that forgets old objects gives \FoDSupDecayNoDetStateAcc\pct\ even without the detector, so on our data the detector's value lies in dating the changes rather than in accuracy. Grouping contacts by object could leak class information, because in our test campaign each object is also a class. Weighting every contact equally still gives \FoDSupUniStateAcc\pct\ for the CNN and \FoDAugUniStateAcc\pct\ for the jitter CNN. Leaving the current object out of its own estimate, a variant we did not fix in advance, gives \FoDSupOtherStateAcc\pct. It lifts the four rigid materials of the replaced gel from \FoDSupTrkStateTwo\ to \FoDSupOtherStateTwo\pct, so part of their loss is the first objects' own imprint in the estimate. Further variants are in the supplement.
+
+\paragraph{What the estimate needs.}\label{sec:sources}
+Any unlabelled frames of the deployment work, provided they come from several objects (supplement). The session's own contacts are a worse estimate than other objects' contacts, because their mean contains the object. In a run with three seeds and five draws per size, an estimate built from one other object gives \CvsSupObjOne\pct, from two objects \CvsSupObjTwo\pct\ and from nineteen \CvsSupObjNineteen\pct. For the CNN the smooth illumination field alone does as well as the full field, and for the jitter CNN the fine pattern adds about four points.
+
+\subsection{Other sensors and datasets}
 \label{sec:second}
-On Real Tactile MNIST (digit from single touches, 10-way, two events: later days on the same gel; the gel swap), every encoder again collapses raw (supervised \TmLaterSupRawTop\pct\ of predictions in one class, frozen Sparsh \TmLaterIjepaRawTop\pct) and recovers with the previous run's state (supervised F1 \TmLaterSupRawF$\rightarrow$\TmLaterSupPrevF; frozen Sparsh \TmLaterIjepaRawAcc$\rightarrow$\TmLaterIjepaPrevAcc\pct; across the gel swap \TmGelIjepaRawAcc$\rightarrow$\TmGelIjepaPrevAcc). Per-run AdaBN works there (\TmLaterSupAdaRunAcc\pct) because every run holds all ten digits---the control for the per-session collapse on our data. The label-free swap did not transfer to coarse digit shape on this dataset; we claim it for texture on our unit.
-
-\subsection{Ablations}
-\label{sec:ablation}
-\paragraph{Frames integrated.} The imprint is static during a stroke, so consecutive native frames can be averaged; this raises the reliability of fine texture but lowers accuracy on new sessions. With the supervised CNN and previous-session calibration: one frame \SupFonePrevSAcc\pct\ $\rightarrow$ two \SupFtwoPrevAcc\ $\rightarrow$ four \SupFfourPrevAcc\ $\rightarrow$ eight \SupPrevAcc; with jitter, raw \SupAugFoneRawSAcc\ (one) vs \SupAugRawSAcc\ (eight); within the campaign, \HoldSupRawAcc\ (one) vs \HoldFeightRawAcc\ (eight). The label-free objective is insensitive to it (\SwapFoneRawSAcc\ vs \SwapRawAcc). Adding single-frame-level pixel noise to the eight-frame means at training and test time does not recover the single-frame result (\NoiseFeightPrevAcc\ vs \SupPrevAcc\ with eight frames and \SupFonePrevSAcc\ with one): the advantage is not a noise-regularisation effect, and we report it as a finding.
-\paragraph{Resolution.} Area-downscaling the native crops twofold does not reduce cross-hardware material accuracy (single frame, calibrated: \SupFoneScHalfPrevSAcc\ vs \SupFonePrevRawHeadAcc\ native under the same heads; eight frames: \SupScHalfOwnAcc\ vs \SupOwnAcc); fourfold costs \num{1.5}--\num{3} points (\SupFoneScQuarterPrevSAcc; \SupScQuarterOwnAcc). The material cue that survives the state change lives above $\sim$45\,\si{\micro\metre}; the finest band is unreliable in one frame (0.14) and mostly state when integrated.
-\paragraph{Decoys.} Removing the position-matched decoy negatives from the adapter objective costs \num{3.1} points $[+0.5,+6.1]$ (\IjepaAdNoDecoyAcc\ vs \IjepaAdAcc).
+\paragraph{A published benchmark with the tie built in.}
+HCT, the hand-held DIGIT part of TVL~\cite{tvl2024}, records each material in its own sessions, and a recent material benchmark on it reports 98.8\pct\ with training and test frames drawn from the same sessions~\cite{mohsan2026language}. On that split, a frozen DINOv2 with an MLP head scores \HctPubRawAcc\pct\ on its \HctClasses\ classes. Holding out whole sessions lowers this to \HctSessRawAcc\pct, and holding out whole recording days to \HctDayRawAcc\pct. Here our tools do not help. HCT's own no-contact frames give \HctDayBgAcc\pct\ on held-out days and our running estimate \HctDayStreamAcc\pct, and the no-contact frame alone does not predict the material of a session recorded on another day (\HctProbeOtherDays\pct, against \HctProbeMajority\pct\ for the most frequent class). Several HCT days are dominated by one material, so a running mean within a day carries that material's imprint. What separates HCT's sessions and days is therefore mostly not an additive sensor state, but holding out sessions is what reveals it.

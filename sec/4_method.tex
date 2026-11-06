@@ -1,23 +1,37 @@
-\section{Factoring the state out}
+\section{Reading touch relative to the sensor's state}
 \label{sec:method}
+\label{sec:tracker}
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\linewidth]{fig/fig_method.pdf}
-  \caption{\textbf{State swap on real data.} A June canvas contact $x$, its session's loaded-state field $F_s(p)$ (the position-wise mean of the session's other contacts), the residual $r=x-F_s$, the same contact re-rendered under a July session's state (the positive), and a decoy: another surface's residual placed under this crop's state and position. Bottom: the 190--370\,\si{\micro\metre} band. The encoder must match $x$ to $x'$ and not to the decoy; only the surface distinguishes them.}
-  \label{fig:method}
-\end{figure*}
+We write a contact crop at frame position $p$, taken under hardware state $h$, as $x = F_h(p) + r$: the state, a fixed image of the unit and gel, plus the touch. \Cref{sec:signature} showed that $F_h$ is shared by every object imaged with that hardware, stable over months of use, and replaced when the unit or the gel is replaced. A robot that reads touch should therefore keep an estimate $\hat F$ of the current state, notice when the hardware changes, and read every image relative to the estimate. \Cref{alg:tracker} does this with the frames the sensor produces anyway. It needs no class labels, no calibration object and no bare-gel frame, and it works best when it knows which contacts belong to the same object. Where a robot captures a bare-gel frame at every grasp, that frame estimates the state about as well (\cref{sec:material}). The contact stream gives the estimate where no blank is recorded, as in most archived datasets and in our own first campaigns. There, every recording starts after the grasp has closed (\AbcFirstContactPct\pct\ of episodes start above 0.3\,N), so not even the first frame of an episode shows the bare gel.
 
-Given $x = F_s(p) + r$ (\cref{fig:method})---the sensor's loaded state at that position in that session, plus a contact-specific residual that carries the surface---the representation keeps the state explicit and reads each cue against the right one. $F_s$ is estimated from the stream the robot already produces, the position-wise mean of contacts, with no labels, calibration presses or simulator; where bare-gel frames exist they estimate the same state (\cref{sec:material}). Three uses follow.
+\begin{algorithm}[t]
+\caption{The state tracker, run on the robot's own stream}
+\label{alg:tracker}
+\begin{algorithmic}[1]
+\Require training mean $G(p)$; thresholds $\tau_f,\tau_i$ from the training data; persistence $m$; windows $K, W$
+\State prior $P \gets G$; object means $\{F_o\} \gets \emptyset$; run $\gets 0$
+\For{each episode: contact crops $x_j$ at positions $p_j$ of object $o$ (no label)}
+  \State $\hat F(p) \gets \big(P(p) + \sum_{o'} F_{o'}(p)\big) / \big(1 + n(p)\big)$ \Comment{$n(p)$: objects covering $p$}
+  \State \textbf{read} $x'_j \gets x_j - \hat F(p_j) + G(p_j)$ \Comment{to the encoder and head}
+  \State push the episode's mean whole frame into the recent window $\mathcal R$ (last $K$); its oldest frame moves to the reference window $\mathcal Q$ (the $W$ before)
+  \State $c \gets \text{corr}\big(\text{band}(\bar{\mathcal R}), \text{band}(\bar{\mathcal Q})\big)$ away from markers; \ $\delta \gets \big|\text{low}(\bar{\mathcal R}) - \text{low}(\bar{\mathcal Q})\big|$
+  \State run $\gets$ run $+1$ if $c<\tau_f$ and $\delta>\tau_i$ else $0$
+  \If{run $\ge m$} \Comment{the hardware has changed}
+    \State $P \gets G + \text{low}(\hat F - G)$; $\{F_o\} \gets \emptyset$; run $\gets 0$; pause detection for $W{+}K$ episodes
+  \EndIf
+  \State add the crops $x_j$ to the running mean $F_o$ of object $o$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
-\paragraph{Stream calibration (test time).}
-Replace the current state by the training mean: $\tilde{x} = x - \hat F(p) + G(p)$, with $G$ the mean field over training sessions. Any contacts of the current deployment serve as $\hat F$: the field of the \emph{previous} session---a different object, hence carrying no information about the current one---optionally updated online with every new contact; the mean field of the deployment so far; or the bare gel. All work about equally well. \Cref{sec:material} compares them, together with the optimistic source (the current session's other contacts) and the dependence on how many contacts have been seen.
+\paragraph{Estimate.}
+The estimate is the position-wise mean over the objects seen since the last hardware change, including the current object's earlier contacts. Each object first averages its own contacts, and the objects then count equally, with the prior counting as one more object. Every object imprints the gel in a different way, so the imprints average out and the hardware remains. This is the retrospective flat-field of microscopy~\cite{singh2014illumination,peng2017basic}, taken from a robot's stream. Its error is the mean imprint of the objects it contains, so a single object is a poor estimate of the state and two or more are good ones (\cref{sec:sources}). We weight by object because the first object after a change would otherwise dominate the estimate through its many contacts. When the robot is deployed, the tracker starts with the training mean as its prior. In our data each session holds one object, so the object is the session. A robot knows when it moves to a new object from its own task. After a change, the prior keeps the smooth illumination part of the old estimate and drops its fine pattern. After our gel replacement, the old illumination was closer to the new hardware than the training mean was (\LpDistStwoSthree\ against \LpDistSoneSthree\ grey levels).
 
-\paragraph{State swap (training time, label-free).}
-Each training contact is re-rendered under another session's state, $x' = r + F_{s'}(p)$, and an encoder $f$ is trained to match $f(x)$ and $f(x')$ with InfoNCE~\cite{oord2018cpc,chen2020simclr}. Two details matter. Batches are built from a few sessions so that negatives share the anchor's state, and \emph{decoy} negatives are added: another contact's residual placed at the anchor's position under the anchor's state, $x^{d} = r_{j} + F_s(p)$, so that the only way to tell the positive from the decoy is the surface. Sessions and image positions are recording metadata; no material label enters the objective. (The gain from the decoys is measured in \cref{sec:ablation}.)
+\paragraph{Detection.}
+The detector reads whole frames, which the robot has anyway and which cover the whole gel. Each episode contributes the mean of its frames, and the detector compares the mean of the last $K\!=\!8$ episodes with the mean of the $W\!=\!30$ episodes before them, using two statistics. The first is the correlation of their fine bands (190--370\,\si{\micro\metre}, at least 60\,px from any marker), which is high on the same hardware and drops when the cartridge's pattern changes. The second is the mean absolute difference of their smooth illumination fields (Gaussian, $\sigma\!=\!33$\,px). Either statistic alone raises false alarms. Materials with a strong texture of their own, such as canvas, lower the fine-band correlation on any hardware, and the illumination field moves between sessions of the same hardware. A change is declared only when both statistics leave the same-hardware range for $m\!=\!5$ consecutive episodes. The thresholds follow a fixed rule: the 10th percentile of the correlation and the 95th percentile of the illumination distance over the episodes of the first hardware state, which is training data. An earlier version of the detector chose its thresholds from a scan of 210 settings on our stream. We replaced that scan with this rule before computing any of the results below, and kept the earlier version's windows, persistence and band. For the public datasets the same rule is applied to one unit of each dataset.
 
-\paragraph{State-swap adapter on a frozen foundation model.}
-The same objective trains a two-layer MLP on top of a frozen tactile foundation model (Sparsh~\cite{higuera2024sparsh}, 768-d tokens mean-pooled); the encoder's own two-frame input is re-rendered on both frames. Training takes twelve minutes on one GPU and needs neither labels nor any data from the deployment day.
+\paragraph{Training.}
+Two choices at training time concern the tie between class and state. The encoder can be trained with \emph{state augmentation}, an alternative when no state estimate is available at test time: with probability one half, a training crop is re-rendered under another training session's state, $x' = x - F_s(p) + F_{s'}(p)$, where $F_s$ is the crop's own session field with its episode left out. A class recorded under one hardware state is then also seen under the others. The classifier head is fitted on training images read in the same way as test images. Each training crop is read relative to the mean of the other training sessions of its hardware epoch, with epochs taken from the detector's alarms on the training stream. Both the training and the test reading then subtract a many-object estimate of the current hardware.
 
-\paragraph{The unloaded state for geometry and contact.}
-Normal force and contact are not appearance quantities. We read them against the \emph{unloaded} gel, the bare-gel frames the robot sees between grasps: for force, the marker grid detected on the bare gel at native resolution is matched to the grid in a contact frame, and the affine summary of the displacement field (divergence, mean displacement, net shear) is mapped to force by a linear map; for contact, a detector operates on $f(x) - f(\text{bare gel of the session})$. \Cref{sec:force,sec:contact} show that the force reference only needs refreshing at a gel swap (a new gel has a new stiffness), whereas the appearance state drifts daily.
+\paragraph{Reading.}
+Each image is read as $x' = x - \hat F(p) + G(p)$ and passed to the encoder and the classifier head. Dividing by the estimate instead of subtracting it gives the same accuracy, and richer per-pixel photometric alignments are worse (supplement). The smooth illumination part of the estimate does most of the correction (\cref{sec:sources}).
