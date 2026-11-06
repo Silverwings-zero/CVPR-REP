@@ -305,3 +305,9 @@ Every local job is stopped and the GPU is free: the queue chain and the waiter b
 - Pending in the paper: ablation row i (r50_tube_geo_cdan_early, queue 26) prints ?? and has a TODO in the experiments and discussion; the supplement still describes the old protocol (due Nov 23).
 - The ablation's low-pass and detector sentences now use the full method's variants (complete), so queue 27 (recipe reading variants) only feeds the supplement.
 - The Overleaf compile error (\FoDSupTrkStateAcc undefined in the abstract) came from a stale Overleaf copy (abstract from Oct 28); GitHub main compiles.
+
+## Status 2026-11-06 07:50
+- Local queues 26 and 27 done; queue 25 (CNN FDA, supplement only) on its last fold.
+- Row i resolved (r50_tube_geo_cdan_early, 3 seeds): on the 28 later sessions the stream never contained, early-stream alignment beats the reading by +11.6 [5.1, 18.6] and trails full-stream alignment by 3.9 [1.8, 6.0], so it keeps about three quarters of the alignment gain. Sec 5 and Discussion sentences updated, TODO(r50) comments removed.
+- numbers_xp.tex regenerated (--headline r50): no undefined macro used by the paper or supplement. Build: compiles, LLM statement p.8, references p.9, main text ends at ruler line 636.
+- Overleaf sync conflict (overleaf-2026-11-06-0713, a stale Oct 28 snapshot with no new edits) merged into main with -s ours (cacf77f); the user pulls in Overleaf.

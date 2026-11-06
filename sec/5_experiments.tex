@@ -91,8 +91,7 @@ The published method closest to the reading is FDA~\cite{fda2020}. It gives ever
 
 Two confidence objectives on the stream ask the classifier to be confident on the new hardware while spreading its predictions over the classes. One asks it of the average prediction of several touches, as MEMO~\cite{zhang2022memo} does for augmented copies, and the other of every touch, as SHOT~\cite{liang2020shot} does. The first adds a few points with an interval that includes zero (f), and the second costs about five (g), so the method includes neither. Reading the training images as well, each relative to other sessions of its hardware, does not help either and costs about two points (h).
 
-A robot that adapts to its own stream classifies some touches that the stream already contained. To separate adaptation from memorisation, we align with the first half of each configuration's test sessions only and score the second half, which the stream never contained (i). The gain over the reading alone remains on those sessions.
-% TODO(r50): row i waits for r50_tube_geo_cdan_early (local queue 26); re-check the sentence above and the matching Discussion sentence against \XdEarlyVsLate and \XdEarlyVsLateFull.
+A robot that adapts to its own stream classifies some touches that the stream already contained. To separate adaptation from memorisation, we align with the first half of each configuration's test sessions only and score the second half, which the stream never contained (i). On those sessions alignment still adds about twelve points to the reading alone, three quarters of what it adds when the stream contains them.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
