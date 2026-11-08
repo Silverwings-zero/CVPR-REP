@@ -2,45 +2,63 @@
 \label{sec:exp}
 
 \paragraph{Protocol.}
-We test every recording of a material made on hardware other than the one it was learned on. Three folds hold out campaign D (September and October), campaign C (July 9--13), and campaigns A and B together (June and early July), and each trains on the remaining campaigns. Across the three folds this gives 55 test sessions, each tested once. In 47 of them the material was learned on the other unit, and in 8 on the other gel of the same unit. For the fold that holds out A and B, which trains on later campaigns and tests on earlier ones, we wrote down our predictions before training any model (supplement). Each session holds one material. We report the share of a session's episodes that are classified correctly, averaged over the 55 sessions, with 95\pct\ intervals from a bootstrap over sessions and paired bootstrap intervals for differences between methods. Chance is 5\pct. We also report the share of test episodes assigned to the most predicted class, averaged over the folds, which exposes a collapse onto few classes.
+We test every recording of a material made on hardware other than the one it was learned on. Three folds hold out campaign D, campaign C, and campaigns A and B together, and each trains on the remaining campaigns (\cref{tab:folds}). Across the three folds this gives 55 test sessions, each tested once. In 47 of them the material was learned on the other unit, which also carried another gel, and in 8 on the other gel of the same unit. Each session holds one material. Every choice of the method, among them the low-pass width and the detector's constants, was made on the fold that holds out D. For the fold that holds out A and B, which trains on later campaigns and tests on earlier ones, we committed a dated pre-registration with three directional predictions before training any model for it, and all three held (supplement). We report the share of a session's episodes that are classified correctly, averaged over the 55 sessions, with 95\pct\ intervals from a bootstrap over sessions and paired bootstrap intervals for differences between methods. Chance is 5\pct. We also report the share of test episodes assigned to the most predicted class, averaged over the folds, which exposes a collapse onto few classes.
+
+\begin{table}[t]
+  \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
+  \caption{\textbf{The three folds.} Each fold trains on the campaigns not held out and tests the sessions whose material was learned on other hardware. Unit and gel: S1 against S2. Gel: S2 against S3 (\cref{sec:signature}).}
+  \label{tab:folds}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}llrrrr@{}}
+    \toprule
+    held out & test hardware & sessions & unit and gel / gel & episodes & materials \\
+    \midrule
+    D (Sep 22 -- Oct 15) & S2, S3 & \XpFoldDN & \XpFoldDUnit\ / \XpFoldDGel & \XpFoldDEps & \XpFoldDMats \\
+    C (Jul 9 -- 13) & S1, S2 & \XpFoldCN & \XpFoldCUnit\ / \XpFoldCGel & \XpFoldCEps & \XpFoldCMats \\
+    A$+$B (Jun 15 -- Jul 8) & S1 & \XpFoldABN & \XpFoldABUnit\ / \XpFoldABGel & \XpFoldABEps & \XpFoldABMats \\
+    \midrule
+    all & & 55 & 47 / 8 & \EpCrops & 20 \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
 
 \paragraph{Training and the stream.}
-Unless stated otherwise, every method uses the same encoder, a ResNet-50~\cite{he2016resnet} that starts from its ImageNet weights and is fine-tuned at the native \SI{11.3}{\micro\metre}/px on 192-px crops along the contact, with flips, quarter turns and photometric jitter. We call this training the recipe. An episode is classified by the mean log-probability of 24 crops, from three positions along the contact and eight frames of the stroke. Table rows average three training seeds, and the comparisons between the closest methods use five. Every method that adapts receives the same unlabelled stream: all contacts recorded on the test hardware in the test campaign. The stream therefore contains the test sessions themselves, as a working robot's stream would, and row~i of \cref{tab:ablation} scores sessions that the stream never contained. Every method is given the true dates of the changes, so that the reading and the test-time baselines, which are reset at each change, use the same knowledge. \Cref{sec:trackerexp} replaces the true dates with the detector's alarms.
+Unless stated otherwise, every method uses the same encoder, a ResNet-50~\cite{he2016resnet} that starts from its ImageNet weights and is fine-tuned at the native \SI{11.3}{\micro\metre}/px on 192-px crops along the contact, which we call tube crops, with flips, quarter turns and photometric jitter, for 6{,}000 steps of AdamW at batch size 64 (supplement). We call this training the recipe. An episode is classified by the mean log-probability of 24 crops, from three positions along the contact and eight frames of the stroke. Table rows average three training seeds, and the comparisons between the closest methods use five. Over seeds, the 55-session mean varies by under a point for the recipe and the reading and by one to three points for the aligned models, less than the intervals over sessions. Every method that adapts receives the same unlabelled stream: all contacts recorded on the test hardware in the test campaign. The stream therefore contains the test sessions themselves, as a working robot's stream would, and row~i of \cref{tab:ablation} scores sessions that the stream never contained. Every method is given the true dates of the changes (\cref{sec:trackerexp} replaces them with the detector's alarms), so that the reading and the test-time baselines, which are reset at each change, use the same knowledge.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
-  \caption{\textbf{Comparison with published adaptation methods} on the 55 cross-hardware sessions (episode accuracy, three seeds, chance 5\pct). Unit / gel: the 47 sessions whose material was learned on the other unit and the 8 learned on the other gel. Top: share of test episodes in the most predicted class, averaged over the folds. Test-time methods adapt the trained recipe model on the robot's stream in recording order and are reset at each change of hardware. Retraining methods use the same stream without labels during training. $+$\,reading: test images read with \cref{alg:tracker}.}
+  \caption{\textbf{Comparison with published adaptation methods} on the 55 cross-hardware sessions (episode accuracy, three seeds, chance 5\pct). Unit and gel / gel: the 47 sessions learned on the other unit, which also carried another gel, and the 8 learned on the other gel of the same unit. Top: share of test episodes in the most predicted class, averaged over the folds. Test-time methods adapt the recipe model on the stream in recording order, reset at each change of hardware, and retraining methods use the same stream without labels. $+$\,reading: test images read with \cref{alg:tracker}; $\Delta$: its paired gain over the row above, with the 95\pct\ interval.}
   \label{tab:baselines}
   \resizebox{\linewidth}{!}{%
-  \begin{tabular}{@{}lcccc@{}}
+  \begin{tabular}{@{}lccccc@{}}
     \toprule
-    method & all [95\pct\ interval] & unit (47) & gel (8) & top \\
+    method & all [95\pct\ interval] & unit and gel (47) & gel (8) & top & $\Delta$ reading \\
     \midrule
-    recipe, no adaptation & \XpSrcAcc\ [\XpSrcLo, \XpSrcHi] & \XpSrcUnit & \XpSrcGel & \XpSrcTop \\
+    recipe, no adaptation & \XpSrcAcc\ [\XpSrcLo, \XpSrcHi] & \XpSrcUnit & \XpSrcGel & \XpSrcTop & \\
     \midrule
-    \multicolumn{5}{@{}l}{\emph{test time, on the stream, no retraining}} \\
-    test-time BatchNorm~\cite{li2018adabn} & \XpTtaBnAcc\ [\XpTtaBnLo, \XpTtaBnHi] & \XpTtaBnUnit & \XpTtaBnGel & \XpTtaBnTop \\
-    Tent~\cite{wang2021tent} & \XpTtaTentAcc\ [\XpTtaTentLo, \XpTtaTentHi] & \XpTtaTentUnit & \XpTtaTentGel & \XpTtaTentTop \\
-    SAR~\cite{niu2023sar} & \XpTtaSarAcc\ [\XpTtaSarLo, \XpTtaSarHi] & \XpTtaSarUnit & \XpTtaSarGel & \XpTtaSarTop \\
-    DeYO~\cite{lee2024deyo} & \XpTtaDeyoAcc\ [\XpTtaDeyoLo, \XpTtaDeyoHi] & \XpTtaDeyoUnit & \XpTtaDeyoGel & \XpTtaDeyoTop \\
-    RoTTA~\cite{yuan2023rotta} & \XpTtaRottaAcc\ [\XpTtaRottaLo, \XpTtaRottaHi] & \XpTtaRottaUnit & \XpTtaRottaGel & \XpTtaRottaTop \\
-    reading (\cref{alg:tracker}), ours & \textbf{\XpSrcReadAcc}\ [\XpSrcReadLo, \XpSrcReadHi] & \XpSrcReadUnit & \XpSrcReadGel & \XpSrcReadTop \\
+    \multicolumn{6}{@{}l}{\emph{test time, on the stream, no retraining}} \\
+    per-batch BatchNorm~\cite{schneider2020bn} & \XpTtaBnAcc\ [\XpTtaBnLo, \XpTtaBnHi] & \XpTtaBnUnit & \XpTtaBnGel & \XpTtaBnTop & \\
+    Tent~\cite{wang2021tent} & \XpTtaTentAcc\ [\XpTtaTentLo, \XpTtaTentHi] & \XpTtaTentUnit & \XpTtaTentGel & \XpTtaTentTop & \\
+    SAR~\cite{niu2023sar} & \XpTtaSarAcc\ [\XpTtaSarLo, \XpTtaSarHi] & \XpTtaSarUnit & \XpTtaSarGel & \XpTtaSarTop & \\
+    DeYO~\cite{lee2024deyo} & \XpTtaDeyoAcc\ [\XpTtaDeyoLo, \XpTtaDeyoHi] & \XpTtaDeyoUnit & \XpTtaDeyoGel & \XpTtaDeyoTop & \\
+    RoTTA~\cite{yuan2023rotta} & \XpTtaRottaAcc\ [\XpTtaRottaLo, \XpTtaRottaHi] & \XpTtaRottaUnit & \XpTtaRottaGel & \XpTtaRottaTop & \\
+    reading (\cref{alg:tracker}), ours & \textbf{\XpSrcReadAcc}\ [\XpSrcReadLo, \XpSrcReadHi] & \XpSrcReadUnit & \XpSrcReadGel & \XpSrcReadTop & \XdReadVsRecipe\ [\XdReadVsRecipeLo, \XdReadVsRecipeHi] \\
     \midrule
-    \multicolumn{5}{@{}l}{\emph{retraining with the unlabelled stream}} \\
-    DANN~\cite{ganin2016dann} & \XpDannAcc\ [\XpDannLo, \XpDannHi] & \XpDannUnit & \XpDannGel & \XpDannTop \\
-    \ \ $+$ reading & \XpDannReadAcc\ [\XpDannReadLo, \XpDannReadHi] & \XpDannReadUnit & \XpDannReadGel & \XpDannReadTop \\
-    MCC~\cite{jin2020mcc} & \XpMccAcc\ [\XpMccLo, \XpMccHi] & \XpMccUnit & \XpMccGel & \XpMccTop \\
-    \ \ $+$ reading & \XpMccReadAcc\ [\XpMccReadLo, \XpMccReadHi] & \XpMccReadUnit & \XpMccReadGel & \XpMccReadTop \\
-    SDAT~\cite{rangwani2022sdat} & \XpSdatAcc\ [\XpSdatLo, \XpSdatHi] & \XpSdatUnit & \XpSdatGel & \XpSdatTop \\
-    \ \ $+$ reading & \XpSdatReadAcc\ [\XpSdatReadLo, \XpSdatReadHi] & \XpSdatReadUnit & \XpSdatReadGel & \XpSdatReadTop \\
-    MIC~\cite{hoyer2023mic} & \XpMicAcc\ [\XpMicLo, \XpMicHi] & \XpMicUnit & \XpMicGel & \XpMicTop \\
-    \ \ $+$ reading & \XpMicReadAcc\ [\XpMicReadLo, \XpMicReadHi] & \XpMicReadUnit & \XpMicReadGel & \XpMicReadTop \\
-    CDAN+E~\cite{long2018cdan} & \XpCdanAcc\ [\XpCdanLo, \XpCdanHi] & \XpCdanUnit & \XpCdanGel & \XpCdanTop \\
-    \ \ $+$ reading, ours & \textbf{\XpFullAcc}\ [\XpFullLo, \XpFullHi] & \XpFullUnit & \XpFullGel & \XpFullTop \\
+    \multicolumn{6}{@{}l}{\emph{retraining with the unlabelled stream}} \\
+    DANN~\cite{ganin2016dann} & \XpDannAcc\ [\XpDannLo, \XpDannHi] & \XpDannUnit & \XpDannGel & \XpDannTop & \\
+    \ \ $+$ reading & \XpDannReadAcc\ [\XpDannReadLo, \XpDannReadHi] & \XpDannReadUnit & \XpDannReadGel & \XpDannReadTop & \XdDannReadVsDann\ [\XdDannReadVsDannLo, \XdDannReadVsDannHi] \\
+    MCC~\cite{jin2020mcc} & \XpMccAcc\ [\XpMccLo, \XpMccHi] & \XpMccUnit & \XpMccGel & \XpMccTop & \\
+    \ \ $+$ reading & \XpMccReadAcc\ [\XpMccReadLo, \XpMccReadHi] & \XpMccReadUnit & \XpMccReadGel & \XpMccReadTop & \XdMccReadVsMcc\ [\XdMccReadVsMccLo, \XdMccReadVsMccHi] \\
+    SDAT~\cite{rangwani2022sdat} & \XpSdatAcc\ [\XpSdatLo, \XpSdatHi] & \XpSdatUnit & \XpSdatGel & \XpSdatTop & \\
+    \ \ $+$ reading & \XpSdatReadAcc\ [\XpSdatReadLo, \XpSdatReadHi] & \XpSdatReadUnit & \XpSdatReadGel & \XpSdatReadTop & \XdSdatReadVsSdat\ [\XdSdatReadVsSdatLo, \XdSdatReadVsSdatHi] \\
+    MIC~\cite{hoyer2023mic} & \XpMicAcc\ [\XpMicLo, \XpMicHi] & \XpMicUnit & \XpMicGel & \XpMicTop & \\
+    \ \ $+$ reading & \XpMicReadAcc\ [\XpMicReadLo, \XpMicReadHi] & \XpMicReadUnit & \XpMicReadGel & \XpMicReadTop & \XdMicReadVsMic\ [\XdMicReadVsMicLo, \XdMicReadVsMicHi] \\
+    CDAN+E~\cite{long2018cdan} & \XpCdanAcc\ [\XpCdanLo, \XpCdanHi] & \XpCdanUnit & \XpCdanGel & \XpCdanTop & \\
+    \ \ $+$ reading, ours & \textbf{\XpFullAcc}\ [\XpFullLo, \XpFullHi] & \XpFullUnit & \XpFullGel & \XpFullTop & \XdFullVsCdan\ [\XdFullVsCdanLo, \XdFullVsCdanHi]$^5$ \\
     \midrule
-    \multicolumn{5}{@{}l}{\emph{retraining on images that carry the stream's low frequencies}} \\
-    FDA~\cite{fda2020} & \XpFdaAcc\ [\XpFdaLo, \XpFdaHi] & \XpFdaUnit & \XpFdaGel & \XpFdaTop \\
-    \ \ $+$ reading & \XpFdaReadAcc\ [\XpFdaReadLo, \XpFdaReadHi] & \XpFdaReadUnit & \XpFdaReadGel & \XpFdaReadTop \\
+    \multicolumn{6}{@{}l}{\emph{retraining on images that carry the stream's low frequencies}} \\
+    FDA~\cite{fda2020} & \XpFdaAcc\ [\XpFdaLo, \XpFdaHi] & \XpFdaUnit & \XpFdaGel & \XpFdaTop & \\
+    \ \ $+$ reading & \XpFdaReadAcc\ [\XpFdaReadLo, \XpFdaReadHi] & \XpFdaReadUnit & \XpFdaReadGel & \XpFdaReadTop & \XdFdaReadVsFda\ [\XdFdaReadVsFdaLo, \XdFdaReadVsFdaHi] \\
     \bottomrule
   \end{tabular}}
 \end{table}
@@ -48,54 +66,54 @@ Unless stated otherwise, every method uses the same encoder, a ResNet-50~\cite{h
 \subsection{Comparison with published adaptation methods}
 \label{sec:baselines}
 
-\Cref{tab:baselines} groups the methods by what they use. Test-time methods adapt the trained model while the stream arrives. Retraining methods train again with the stream as unlabelled target data. Every published method runs with its paper's default settings on the same encoder, training budget and stream. SDAT and MIC keep the better of two trade-off weights, judged on the first seed of this protocol, which favours them over our method, whose weight is fixed (supplement). Trained with the recipe, the ResNet-50 recognises the materials of the 55 sessions at \XpRecipeAcc\pct, and on average over the folds \XpRecipeTop\pct\ of the test episodes go to a single class.
+\Cref{tab:baselines} groups the methods by what they use. Every published method runs with its paper's default settings on the same encoder, training budget and stream. SDAT and MIC keep the better of two trade-off weights, judged on the first seed of this protocol, which favours them over our method, whose weight is fixed (supplement). Trained with the recipe, the ResNet-50 recognises the materials of the 55 sessions at \XpRecipeAcc\pct, and on average over the folds \XpRecipeTop\pct\ of the test episodes go to a single class.
 
 \paragraph{Test time.}
-Four of the five test-time methods collapse on the robot's stream, to about \XpTtaBnAcc\pct. Test-time BatchNorm, Tent, SAR and DeYO estimate normalisation statistics from the current batch, and consecutive episodes come from one session, so every batch holds a single material. The statistics then normalise the material away. In their own benchmark setting, with the episodes of each configuration shuffled, they recover to \XpTtaBnIidAcc\pct, a little above the unadapted model. RoTTA was designed for correlated streams, and it is the one test-time method that works on the robot's stream, where it gains \XdRottaVsSrc\ points over the unadapted model. The reading needs neither batches nor gradient steps, and it does as well. It raises the unadapted model from \XpSrcAcc\ to \XpSrcReadAcc\pct, \XdSrcReadVsRotta\ points above RoTTA with an interval that includes zero (\XdSrcReadVsRottaLo\ to \XdSrcReadVsRottaHi). On the shuffled stream RoTTA reaches \XpTtaRottaIidAcc\pct, and its lead over the reading is again within the interval. The two gains are not the same, though. RoTTA gains on the sessions of the other unit and loses most of the eight sessions of the other gel, where it falls from \XpSrcGel\ to \XpTtaRottaGel\pct. The reading lowers them only to \XpSrcReadGel\pct. Running RoTTA on read images adds nothing to RoTTA alone.
+Four of the five test-time methods collapse on the robot's stream, to about \XpTtaBnAcc\pct. Per-batch BatchNorm, Tent, SAR and DeYO estimate normalisation statistics from the current batch, here 72 crops from three consecutive episodes, and consecutive episodes come from one session, so every batch holds a single material. The statistics then normalise the material away, one failure that the four rows share. With the episodes of each configuration shuffled, their own benchmark setting, in which the batch statistics approach those of the whole configuration as AdaBN~\cite{li2018adabn} uses them, they recover to \XpTtaBnIidAcc\pct, a little above the unadapted model. RoTTA was designed for correlated streams, and it is the one test-time method that works on the robot's stream, where it gains \XdRottaVsSrc\ points over the unadapted model. The reading needs neither batches nor gradient steps, and it does as well. It raises the unadapted model from \XpSrcAcc\ to \XpSrcReadAcc\pct, \XdSrcReadVsRotta\ points above RoTTA with an interval that includes zero (\XdSrcReadVsRottaLo\ to \XdSrcReadVsRottaHi). The two gains are not the same, though. RoTTA gains on the sessions of the other unit and loses most of the eight sessions of the other gel, where it falls from \XpSrcGel\ to \XpTtaRottaGel\pct. The reading lowers them only to \XpSrcReadGel\pct.
 
 \paragraph{Retraining.}
-Every retraining method improves on the recipe, and the reading improves every one of them further, by three to ten points with intervals that exclude zero. With the reading, DANN, SDAT, MIC and CDAN+E end within three points of each other, while MCC stays well below. Our method, CDAN+E with the reading, is the highest at \XpFullAcc\pct. Its lead is within the interval: over five seeds it is \XdFullVsDannRead\ points above DANN with the reading (\XdFullVsDannReadLo\ to \XdFullVsDannReadHi), and over three seeds \XdFullVsSdatRead\ above SDAT and \XdFullVsMicRead\ above MIC, each with the reading. The choice of aligner matters less than the reading added to it.
+Every retraining method improves on the recipe, and the reading improves every one of them further on the 55 sessions, by three to ten points with intervals that exclude zero (last column). The gain comes from the 47 sessions of the other unit and gel. On the eight sessions of the other gel the reading lowers every method, as \cref{sec:discussion} discusses. With the reading, DANN, SDAT, MIC and CDAN+E end within three points of each other, while MCC stays well below. Our method, CDAN+E with the reading, is the highest at \XpFullAcc\pct, but its lead is within the interval: \XdFullVsDannRead\ points above DANN with the reading over five seeds (\XdFullVsDannReadLo\ to \XdFullVsDannReadHi), \XdFullVsSdatRead\ above SDAT and \XdFullVsMicRead\ above MIC. The choice of aligner matters less than the reading added to it.
 
 \paragraph{Changing the training images instead.}
-The published method closest to the reading is FDA~\cite{fda2020}. It gives every training image the low-frequency amplitude spectrum of an image from the stream, so that the model trains under the new hardware's illumination. With $\beta=0.01$, which swaps the band that the reading removes, FDA gains about six points over the recipe. That is half of what the reading gains without any retraining (\XdReadVsFda\ points between them, \XdReadVsFdaLo\ to \XdReadVsFdaHi). The reading adds about three points to FDA, and the wider band of $\beta=0.05$ gains less.
+The published method closest to the reading is FDA~\cite{fda2020}, which gives every training image the low-frequency amplitude spectrum of an image from the stream, so that the model trains under the new hardware's illumination. With $\beta=0.01$, which swaps the band that the reading removes, FDA gains about six points over the recipe, half of what the reading gains without any retraining (\XdReadVsFda\ points between them, \XdReadVsFdaLo\ to \XdReadVsFdaHi). The reading adds about three points to FDA, and the wider band of $\beta=0.05$ gains less.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
-  \caption{\textbf{What each part contributes} (ResNet-50, 55 cross-hardware sessions). $\Delta$: paired difference to the row named, with its 95\pct\ interval, over the seeds both runs have (three, or five where marked $^5$).}
+  \caption{\textbf{What each part contributes} (ResNet-50, 55 cross-hardware sessions, and the mean within each fold: D with 20 sessions, C with 5, A$+$B with 30). $\Delta$: paired difference to the row named, with its 95\pct\ interval, over the seeds both runs have (three, or five where marked $^5$). Bold marks the method, not the best row.}
   \label{tab:ablation}
   \resizebox{\linewidth}{!}{%
-  \begin{tabular}{@{}llcl@{}}
+  \begin{tabular}{@{}llccccl@{}}
     \toprule
-    & pipeline & all & $\Delta$ \\
+    & pipeline & all & D & C & A$+$B & $\Delta$ \\
     \midrule
-    a & recipe & \XpRecipeAcc & \\
-    b & a $+$ reading & \XpReadAcc & \XdReadVsRecipe\ [\XdReadVsRecipeLo, \XdReadVsRecipeHi] vs a \\
-    c & a $+$ alignment (CDAN+E) & \XpCdanAcc & \\
-    d & a $+$ alignment $+$ reading (ours) & \textbf{\XpFullAcc} & \XdFullVsRead\ [\XdFullVsReadLo, \XdFullVsReadHi] vs b \\
-    & & & \XdFullVsCdan\ [\XdFullVsCdanLo, \XdFullVsCdanHi] vs c$^5$ \\
+    a & recipe & \XpRecipeAcc & \XpRecipeFoldD & \XpRecipeFoldC & \XpRecipeFoldAB & \\
+    b & a $+$ reading & \XpReadAcc & \XpReadFoldD & \XpReadFoldC & \XpReadFoldAB & \XdReadVsRecipe\ [\XdReadVsRecipeLo, \XdReadVsRecipeHi] vs a \\
+    c & a $+$ alignment (CDAN+E) & \XpCdanAcc & \XpCdanFoldD & \XpCdanFoldC & \XpCdanFoldAB & \\
+    d & a $+$ alignment $+$ reading (ours) & \textbf{\XpFullAcc} & \XpFullFoldD & \XpFullFoldC & \XpFullFoldAB & \XdFullVsRead\ [\XdFullVsReadLo, \XdFullVsReadHi] vs b \\
+    & & & & & & \XdFullVsCdan\ [\XdFullVsCdanLo, \XdFullVsCdanHi] vs c$^5$ \\
     \midrule
-    e & d with DANN as the aligner & \XpDannReadAcc & \XdFullVsDannReadNeg\ [\XdFullVsDannReadNegLo, \XdFullVsDannReadNegHi] vs d$^5$ \\
-    f & d $+$ grouped confidence & \XpCdanGrpAcc & \XdCdanGrpVsFull\ [\XdCdanGrpVsFullLo, \XdCdanGrpVsFullHi] vs d$^5$ \\
-    g & e $+$ per-touch confidence & \XpDannImAcc & \XdDannImVsDannRead\ [\XdDannImVsDannReadLo, \XdDannImVsDannReadHi] vs e \\
-    h & d, training images read as well & \XpBootAcc & \XdBootVsFull\ [\XdBootVsFullLo, \XdBootVsFullHi] vs d \\
-    i & d, stream of the first half only$^\dagger$ & -- & \XdEarlyVsLate\ [\XdEarlyVsLateLo, \XdEarlyVsLateHi] vs b$^\dagger$ \\
+    e & d with DANN as the aligner & \XpDannReadAcc & \XpDannReadFoldD & \XpDannReadFoldC & \XpDannReadFoldAB & \XdFullVsDannReadNeg\ [\XdFullVsDannReadNegLo, \XdFullVsDannReadNegHi] vs d$^5$ \\
+    f & d $+$ grouped confidence & \XpCdanGrpAcc & \XpCdanGrpFoldD & \XpCdanGrpFoldC & \XpCdanGrpFoldAB & \XdCdanGrpVsFull\ [\XdCdanGrpVsFullLo, \XdCdanGrpVsFullHi] vs d$^5$ \\
+    g & e $+$ per-touch confidence & \XpDannImAcc & \XpDannImFoldD & \XpDannImFoldC & \XpDannImFoldAB & \XdDannImVsDannRead\ [\XdDannImVsDannReadLo, \XdDannImVsDannReadHi] vs e \\
+    h & d, training images read as well & \XpBootAcc & \XpBootFoldD & \XpBootFoldC & \XpBootFoldAB & \XdBootVsFull\ [\XdBootVsFullLo, \XdBootVsFullHi] vs d \\
+    i & d, stream of the first half only$^\dagger$ & \XpLateEarlyAcc$^\dagger$ & & & & \XdEarlyVsLate\ [\XdEarlyVsLateLo, \XdEarlyVsLateHi] vs b$^\dagger$ \\
     \bottomrule
   \end{tabular}}
-  \par\smallskip\raggedright\scriptsize $^\dagger$ aligned with the first half of each configuration's test sessions and scored on the \XpLateN\ later sessions, which the stream never contained.
+  \par\smallskip\raggedright\scriptsize $^\dagger$ aligned with the first half of each configuration's test sessions and scored on the \XpLateN\ later sessions, which the stream never contained; on those sessions b scores \XpLateReadAcc\ and d \XpLateFullAcc.
 \end{table}
 
 \subsection{What each part contributes}
 \label{sec:ablation}
 
-\Cref{tab:ablation} adds the parts one at a time. The reading alone gains about twelve points without any training (b). Alignment alone gains more (c), and the two add up: the full method is better than either part alone (d). The low-pass matters. Subtracting the whole estimate from the full method's test images, fine pattern included, lowers its accuracy by about forty points, far below the recipe, because the fine band of an estimate built from a few objects still carries their imprints. Narrower low-passes ($\sigma$ of 8 or 16\,px) lose ten to twenty points, and wider ones (66 or 132\,px) lose up to two. The gains do not depend on CDAN+E. DANN in its place loses less than a point (e).
+\Cref{tab:ablation} adds the parts one at a time. The reading alone gains about twelve points without any training (b). Alignment alone gains more (c), and the two add up: the full method is better than either part alone (d). The low-pass matters. Subtracting the whole estimate from the full method's test images, fine pattern included, lowers its accuracy by about forty points, far below the recipe, because the fine band of an estimate built from a few objects still carries their imprints. Narrower low-passes ($\sigma$ of 8 or 16\,px) lose ten to twenty points, and wider ones (66 or 132\,px) lose up to two. The width was set on the fold that holds out D, whose 20 sessions are part of this sweep. The gains do not depend on CDAN+E. DANN in its place loses less than a point (e). The fold columns show where the gains are: on the two folds that cross units every part helps, and on the fold that holds out C, four other-gel sessions and one of wood, nothing does.
 
-Two confidence objectives on the stream ask the classifier to be confident on the new hardware while spreading its predictions over the classes. One asks it of the average prediction of several touches, as MEMO~\cite{zhang2022memo} does for augmented copies, and the other of every touch, as SHOT~\cite{liang2020shot} does. The first adds a few points with an interval that includes zero (f), and the second costs about five (g), so the method includes neither. Reading the training images as well, each relative to other sessions of its hardware, does not help either and costs about two points (h).
+Two confidence objectives ask the classifier to be confident on the new hardware while spreading its predictions over the classes, one of the average prediction of several touches, as MEMO~\cite{zhang2022memo} does for augmented copies, the other of every touch, as SHOT~\cite{liang2020shot} does. The first, grouped confidence, adds a few points with an interval that includes zero (f), and the second costs about five (g), so the method includes neither. Reading the training images as well, each relative to other sessions of its hardware, does not help either and costs about two points (h).
 
-A robot that adapts to its own stream classifies some touches that the stream already contained. To separate adaptation from memorisation, we align with the first half of each configuration's test sessions only and score the second half, which the stream never contained (i). On those sessions alignment still adds about twelve points to the reading alone, seven tenths of what it adds when the stream contains them.
+A robot that adapts to its own stream classifies some touches that the stream already contained, so row d is transductive. To separate adaptation from memorisation, we align with the first half of each configuration's test sessions only and score the second half, which the stream never contained (i). On those \XpLateN\ sessions the reading alone scores \XpLateReadAcc\pct. Alignment with the first half raises it to \XpLateEarlyAcc\pct, and alignment with a stream that contains the sessions to \XpLateFullAcc\pct, so about three quarters of the gain is adaptation to the hardware rather than to the test touches themselves.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3pt}
-  \caption{\textbf{Other encoders and views} (55 cross-hardware sessions, three seeds). Tube: 192-px crops along the contact, as above. Frame: 384-px crops anywhere in the frame (392\,px for DINOv2). ResNet-50 and ConvNeXt-T start from ImageNet, DINOv2-B from its self-supervised weights, and all are fine-tuned. The CNN, trained from scratch, has four stages (supplement).}
+  \caption{\textbf{Other encoders and views} (55 cross-hardware sessions, three seeds). Tube: 192-px crops along the contact. Frame: 384-px crops anywhere in the frame (392\,px for DINOv2). ResNet-50 and ConvNeXt-T start from ImageNet and DINOv2-B from its self-supervised weights, all fine-tuned. The CNN trains from scratch (supplement).}
   \label{tab:encoders}
   \resizebox{\linewidth}{!}{%
   \begin{tabular}{@{}llccc@{}}
@@ -119,14 +137,14 @@ A robot that adapts to its own stream classifies some touches that the stream al
 \subsection{Other encoders and views}
 \label{sec:encoders}
 
-\Cref{tab:encoders} repeats the comparison with other encoders, among them a small CNN that trains from scratch at the native resolution on one small GPU. On tube crops every encoder collapses under the recipe, the reading lifts each by ten to twenty points, and alignment adds to the reading for every encoder. The frame view gives the encoders 384-px crops placed anywhere in the frame, which contain much of the illumination field that tube crops only sample. There, alignment carries most of the gain, and what the reading adds on top of it depends on the encoder. It adds \XdDinoFrameReadVsCdan\ points for DINOv2-B (\XdDinoFrameReadVsCdanLo\ to \XdDinoFrameReadVsCdanHi), changes ConvNeXt-T by a point within an interval that includes zero, and costs ResNet-50 nine points (\XdResFrameReadVsCdanLo\ to \XdResFrameReadVsCdanHi). The best frame-view model, ConvNeXt-T aligned and read, reaches \XpCnxFrameCdanReadAcc\pct, close to the ResNet-50 on tube crops, but the reading adds nothing there. On tube crops both parts of the method work for every encoder, which is why the paper's comparisons use that view.
+\Cref{tab:encoders} repeats the comparison with other encoders, among them a small CNN trained from scratch. On tube crops every encoder collapses under the recipe, the reading lifts each by ten to twenty points, and alignment adds to the reading for every encoder. The frame view gives the encoders 384-px crops placed anywhere in the frame, which contain much of the illumination field that tube crops only sample. There, alignment alone recovers most of what the reading recovers on tube crops, and what the reading adds on top of it depends on the encoder. It adds \XdDinoFrameReadVsCdan\ points for DINOv2-B (\XdDinoFrameReadVsCdanLo\ to \XdDinoFrameReadVsCdanHi), changes ConvNeXt-T by a point within an interval that includes zero, and costs ResNet-50 nine points (\XdResFrameReadVsCdanLo\ to \XdResFrameReadVsCdanHi). The best frame-view model, ConvNeXt-T aligned and read, reaches \XpCnxFrameCdanReadAcc\pct, close to the ResNet-50 on tube crops, but the reading adds nothing there. The tube view is the view of every experiment since the pre-registration, and the frame view was added afterwards as a check. Among the tube encoders, the tables above report the ResNet-50 because it is the most accurate, and the other three order the same way.
 
 \subsection{Another lab's Minis: SITR}
 \label{sec:second}
 
-SITR's Minis differ in more than an additive image. They see different parts of their gels and differ in contrast by a factor of \SmContrastRatio\ (supplement). A CNN trained to tell two Minis apart still does so for \UpSitrRead\pct\ of the images of unseen objects after the reading, while for our two units the same test falls to \UpOursRead\pct, where chance is 50\pct. The reading cannot repair a tie between classes and Minis there, but alignment works on the encoder rather than on the image. We tie four classes to the test Mini and train a CNN from scratch, with the test Mini's unlabelled images as the stream (supplement). CDAN+E then raises the accuracy on the 16 classes learned on the other Mini from \XsJit\ to \XsCdan\pct. When the stream holds only 5 of the 20 classes, the gain shrinks by about half, so the stream must cover the materials that the robot is expected to recognise. A per-touch confidence objective, which did not add to alignment on our data, adds to it on SITR, where the stream is a balanced sample of all 20 objects. With a stream of 5 classes its gain falls to a few points, and a robot's stream is of that kind.
+SITR's Minis differ in more than an additive image. They see different parts of their gels and differ in contrast by a factor of \SmContrastRatio\ (supplement). A CNN trained to tell two Minis apart still does so for \UpSitrRead\pct\ of the images of unseen objects after the reading, while for our two units the same test falls to \UpOursRead\pct, where chance is 50\pct. Which model the reading helps follows from this. Subtracting the mean image of the test Mini, in the full band because the Minis differ in more than their smooth part, lets a frozen DINOv2 with an MLP head recover from \CfSitrRawOneCross\ to \CfSitrStreamOneCross\pct\ on the classes learned on the other Mini when one class is tied to the test Mini (\cref{fig:confound}). It leaves a CNN trained from scratch at about \SmStreamCross\pct\ (supplement), because that CNN also learns the field of view and the contrast, which no per-pixel reading removes. Alignment works on the encoder rather than on the image. We tie four classes to the test Mini and train a CNN from scratch, with the test Mini's unlabelled images as the stream (supplement). CDAN+E then raises the accuracy on the 16 classes learned on the other Mini from \XsJit\ to \XsCdan\pct. When the stream holds only 5 of the 20 classes, the gain shrinks by about half, so the stream must cover the materials that the robot is expected to recognise. A per-touch confidence objective, which did not add to alignment on our data, adds to it on SITR's balanced stream of all 20 objects and loses most of that with a stream of 5 classes.
 
 \subsection{Dating the changes}
 \label{sec:trackerexp}
 
-Run over all \EpRecorded\ episodes in recording order, the detector raises \FrAlarms\ alarms: \FrUnitLatency\ episodes after the change of unit, \FrGelLatency\ episodes after the gel replacement, and \FrFalseAlarms\ false ones, in the second September session after the summer break and on the day before the gel replacement. We also splice recordings of one unit or gel onto another in four datasets (ours, SITR, FEATS and Tactile MNIST), with thresholds set on one unit of each and nothing tuned on change points. On the streams spliced from our recordings it detects \TeOursFramesDet\pct\ of the changes (supplement). A false alarm costs little, because the estimate restarts from the training mean and fills again with the next objects. Restarting the estimate at the detector's alarms instead of the true dates does not lower the accuracy of the full method, which changes by \XdFullVarDetVsLp\ points (\XdFullVarDetVsLpLo\ to \XdFullVarDetVsLpHi).
+Run over all \EpRecorded\ episodes in recording order, the detector raises \FrAlarms\ alarms: \FrUnitLatency\ episodes after the change of unit, \FrGelLatency\ episodes after the gel replacement, and \FrFalseAlarms\ false ones, in the second September session after the summer break and on the day before the gel replacement. We also splice recordings of one unit or gel onto another in four datasets (ours, SITR, FEATS and Tactile MNIST), with thresholds set on one unit of each and nothing tuned on change points. It detects \TeOursFramesDet\pct\ of the changes on the streams spliced from our recordings, \TeSitrMiniDet\pct\ between SITR's Minis, \TeFeatsDet\pct\ on FEATS and \TeTmnistDet\pct\ on Tactile MNIST, with at most \TeTmnistFa\ false alarms per thousand stream items (supplement). A false alarm costs little: the estimate restarts from the training mean and refills with the next objects. Restarting the estimate at the detector's alarms instead of the true dates does not lower the accuracy of the full method, which changes by \XdFullVarDetVsLp\ points (\XdFullVarDetVsLpLo\ to \XdFullVarDetVsLpHi).
