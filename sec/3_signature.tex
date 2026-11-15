@@ -5,25 +5,25 @@ We first characterize the image structure associated with the sensor hardware an
 
 \begin{figure}[t]
   \centering
-  \begin{minipage}[c]{0.36\linewidth}\centering
-    \IfFileExists{fig/fig_setup_photo.jpg}{\includegraphics[width=\linewidth,height=2.5cm,keepaspectratio]{fig/fig_setup_photo.jpg}}{\fbox{\parbox[c][2.3cm][c]{0.84\linewidth}{\centering\tiny\TODO{photo of the recording setup, saved as fig/fig\_setup\_photo.jpg}}}}
+  \begin{minipage}[c]{0.355\linewidth}\centering
+    \includegraphics[width=\linewidth]{fig/fig_setup_photo.pdf}
   \end{minipage}\hfill
-  \begin{minipage}[c]{0.62\linewidth}\centering
+  \begin{minipage}[c]{0.625\linewidth}\centering
     \includegraphics[width=\linewidth]{fig/fig_setup_schematic.pdf}
-  \end{minipage}
 
-  \vspace{1pt}
-  {\scriptsize\setlength{\tabcolsep}{6pt}\renewcommand{\arraystretch}{0.85}
-  \begin{tabular}{@{}lccll@{}}
-    \toprule
-    & unit & gel & in use & sessions \\
-    \midrule
-    S1 & 1 & 1 & Jun 15 -- Jul 9 & 31 (A, B, C) \\
-    S2 & 2 & 2 & Jul 10 -- Oct 9 & 19 (C, D) \\
-    S3 & 2 & 3 & Oct 9 -- 15 & 5 (D) \\
-    \bottomrule
-  \end{tabular}}
-  \caption{\textbf{Recording setup and hardware.} Top: the gripper closed on the box, and a schematic of the grasp and of the gel's strokes on the material. Bottom: the hardware configurations and their campaigns.}
+    \vspace{3pt}
+    {\scriptsize\setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{0.85}
+    \begin{tabular}{@{}lccll@{}}
+      \toprule
+      & unit & gel & in use & sessions \\
+      \midrule
+      S1 & 1 & 1 & Jun 15 -- Jul 9 & 31 (A, B, C) \\
+      S2 & 2 & 2 & Jul 10 -- Oct 9 & 19 (C, D) \\
+      S3 & 2 & 3 & Oct 9 -- 15 & 5 (D) \\
+      \bottomrule
+    \end{tabular}}
+  \end{minipage}
+  \caption{\textbf{Recording setup and hardware.} Left: the arm and gripper at the box, which a fixture clamps (background faded). Right: the grasp and the gel's strokes on the material, above the hardware configurations and their campaigns.}
   \label{fig:setup}
 \end{figure}
 
@@ -34,7 +34,7 @@ A GelSight Mini (1640$\times$1232 native frames, \SI{11.3}{\micro\metre}/px, \SI
 In each episode the gripper closes on the box in small steps until the Nano17 reads a target force, and then holds its width. The arm, under Cartesian impedance control, moves the gripper in steps of 1 to 2\,mm so that the gel slides along the face. It strokes 2\,cm to each side and 2\,cm up and down, returns to the centre after each stroke, and then follows a circle of 2\,cm radius (\cref{fig:setup}). The target force is 40 or 80\pct\ of the largest force in the material's HaTT model, between 0.5 and 5\,N, and the strokes reach 9 to 29\,mm/s (supplement). Every five episodes the gripper opens and an operator re-lubricates the gel with petroleum jelly (Vaseline), because the gel does not withstand long dry sliding on some materials.
 
 \paragraph{Campaigns and hardware.}
-One session records one material. Four data collection campaigns cover four months: A (June 15--22), B (July 6--8), C (July 9--13) and D (September 22 to October 15), \EpRecorded\ episodes in all. The material experiments use \EpCrops\ of them (supplement). Campaign D also records frames of the bare gel. The camera's exposure and white balance are fixed (on a held contact the mean of each colour channel drifts by at most 0.3 grey levels per episode), and we never resample a frame. Two units and three gels were used, in three combinations that we call the hardware configurations S1, S2 and S3 (\cref{fig:setup}, bottom).
+One session records one material. Four data collection campaigns cover four months: A (June 15--22), B (July 6--8), C (July 9--13) and D (September 22 to October 15), \EpRecorded\ episodes in all. The material experiments use \EpCrops\ of them (supplement). Campaign D also records frames of the bare gel. The camera's exposure and white balance are fixed (on a held contact the mean of each colour channel drifts by at most 0.3 grey levels per episode), and we never resample a frame. Two units and three gels were used, in three combinations that we call the hardware configurations S1, S2 and S3 (\cref{fig:setup}).
 
 \paragraph{Measurement.}
 For every session we form the position-wise mean of its contact crops in frame coordinates, its \emph{mean contact frame} $M_s(p)$. For a sampled contact crop we correlate its fine band (190--370\,\si{\micro\metre}) with the same band of another session's mean frame, excluding pixels within 60\,px of a printed marker, so that neither the markers nor their inpainting can contribute. \Cref{fig:signature} shows the medians over sessions. A contact matches the other contacts of its own session, which include the same object, at \HwFarOwn. It matches another object touched the same day at \HwFarSameDay, the same unit and gel on another day at \HwFarWeeks, and the same unit and gel three months later at \HwFarMonths. It does not match the other unit (\HwFarOtherUnit) or the other gel of the same unit (\HwFarOtherGel). Frames of the bare gel, with nothing touching it, match their session's mean contact frame at \BlankVsFieldFar. Another lab's GelSight Mini shows the same ordering (orange in \cref{fig:signature}).
