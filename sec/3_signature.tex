@@ -1,30 +1,55 @@
 \section{The hardware state in a tactile image}
 \label{sec:signature}
 
-\paragraph{Data.}
-A GelSight Mini (1640$\times$1232 native frames, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}, printed markers) is mounted on one finger of a parallel gripper, and an ATI Nano17 on the other finger measures the normal force. The object is a box whose face carries one of 20 materials: ABS plastic, aluminium foil, a bubble envelope, canvas, cardboard, ceramic, cork, EPDM foam, fibreglass, fleece, glitter paper, the two faces of a piece of leather, pleather, polyethylene foam, r\'esum\'e paper, silk, textured rubber, vinyl and wood. Each episode grasps the face at one of two forces (40 or 80\pct\ of a per-material maximum, 0.9--5\,N) and strokes it by 2\,cm in four directions and a circle. The gel is lubricated every five episodes, and one session records one material. Four campaigns cover four months: A (June 15--22), B (July 6--8), C (July 9--13) and D (September 22 to October 15), \EpRecorded\ episodes in all. \EpNoCrops\ episodes of campaign D have no eight-frame span of contact inside the stroke, so the material experiments use \EpCrops. Campaign D also records frames of the bare gel. The camera's exposure and white balance are fixed (on a held contact the mean of each colour channel drifts by at most 0.3 grey levels per episode), and we never resample a frame.
+\begin{figure}[t]
+  \centering
+  \begin{minipage}[c]{0.39\linewidth}\centering
+    \IfFileExists{fig/fig_setup_photo.jpg}{\includegraphics[width=\linewidth,height=2.5cm,keepaspectratio]{fig/fig_setup_photo.jpg}}{\fbox{\parbox[c][2.3cm][c]{0.86\linewidth}{\centering\tiny\TODO{photo of the recording setup, saved as fig/fig\_setup\_photo.jpg}}}}
+  \end{minipage}\hfill
+  \begin{minipage}[c]{0.59\linewidth}\centering\footnotesize\setlength{\tabcolsep}{2.2pt}
+    \resizebox{\linewidth}{!}{%
+    \begin{tabular}{@{}lccll@{}}
+      \toprule
+      & unit & gel & in use & sessions \\
+      \midrule
+      S1 & 1 & 1 & Jun 15 -- Jul 9 & 31 (A, B, C) \\
+      S2 & 2 & 2 & Jul 10 -- Oct 9 & 19 (C, D) \\
+      S3 & 2 & 3 & Oct 9 -- 15 & 5 (D) \\
+      \bottomrule
+    \end{tabular}}
+  \end{minipage}
+  \caption{\textbf{Recording setup and hardware.} Left: the gripper on the arm, closed on the box, with the GelSight Mini on one finger and the Nano17 on the other. Right: the three hardware configurations and the campaigns they recorded. Gel 3 replaced gel 2 between two sessions of October 9.}
+  \label{fig:setup}
+\end{figure}
 
-Two units and three gels were used. Unit 1 carried gel 1 until July 9, unit 2 carried gel 2 from July 10, and gel 3 replaced gel 2 on October 9 between 18:42 and 19:37. We call these three combinations of unit and gel the hardware configurations S1, S2 and S3.
+\paragraph{Recording setup.}
+A GelSight Mini (1640$\times$1232 native frames, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}) is mounted on one finger of a two-finger parallel gripper on a 7-DoF Franka Emika Panda arm, and an ATI Nano17 on the other finger measures the normal force (\cref{fig:setup}). We use the gel with printed markers because manipulation needs them: their displacement measures shear and slip~\cite{yuan2017gelsight,dong2017improved}. The object is a box, held in a fixture, whose face carries one of 20 materials drawn from the Penn Haptic Texture Toolkit (HaTT)~\cite{culbertson2014hatt}: ABS plastic, aluminium foil, a bubble envelope, canvas, cardboard, ceramic, cork, EPDM foam, fibreglass, fleece, glitter paper, the two faces of a piece of leather, pleather, polyethylene foam, r\'esum\'e paper, silk, textured rubber, vinyl and wood (the supplement shows a contact with each).
+
+\paragraph{Motion.}
+In each episode the gripper closes on the box in small steps until the Nano17 reads a target force, and then holds its width. The arm, under Cartesian impedance control, moves the gripper in steps of 1 to 2\,mm so that the gel slides along the face. It strokes 2\,cm to each side and 2\,cm up and down, returns to the centre after each stroke, and then follows a circle of 2\,cm radius. The target force is 40 or 80\pct\ of the largest force in the material's HaTT model, between 0.5 and 5\,N, and the strokes reach 9 to 29\,mm/s (supplement). Every five episodes the gripper opens and an operator re-lubricates the gel \TODO{with what?}, because the gel does not withstand long dry sliding on some materials.
+
+\paragraph{Campaigns and hardware.}
+One session records one material. Four campaigns cover four months: A (June 15--22), B (July 6--8), C (July 9--13) and D (September 22 to October 15), \EpRecorded\ episodes in all. The material experiments use \EpCrops\ of them (supplement). Campaign D also records frames of the bare gel. The camera's exposure and white balance are fixed (on a held contact the mean of each colour channel drifts by at most 0.3 grey levels per episode), and we never resample a frame. Two units and three gels were used, in three combinations that we call the hardware configurations S1, S2 and S3 (\cref{fig:setup}, right).
 
 \paragraph{Measurement.}
-For every session we form the position-wise mean of its contact crops in frame coordinates, its \emph{mean contact frame} $M_s(p)$. For a sampled contact crop we correlate its fine band (190--370\,\si{\micro\metre}) with the same band of another session's mean frame, excluding pixels within 60\,px of a printed marker so that inpainting residue cannot contribute. \Cref{fig:signature} shows the medians over sessions. A contact matches the other contacts of its own session, which include the same object, at \HwFarOwn. It matches another object touched the same day at \HwFarSameDay, the same unit and gel on another day at \HwFarWeeks, and the same unit and gel three months later at \HwFarMonths. It does not match the other unit (\HwFarOtherUnit) or the other gel of the same unit (\HwFarOtherGel). Frames of the bare gel, with nothing touching it, match their session's mean contact frame at \BlankVsFieldFar. Another lab's GelSight Mini shows the same ordering (orange in \cref{fig:signature}).
+For every session we form the position-wise mean of its contact crops in frame coordinates, its \emph{mean contact frame} $M_s(p)$. For a sampled contact crop we correlate its fine band (190--370\,\si{\micro\metre}) with the same band of another session's mean frame, excluding pixels within 60\,px of a printed marker, so that neither the markers nor their inpainting can contribute. \Cref{fig:signature} shows the medians over sessions. A contact matches the other contacts of its own session, which include the same object, at \HwFarOwn. It matches another object touched the same day at \HwFarSameDay, the same unit and gel on another day at \HwFarWeeks, and the same unit and gel three months later at \HwFarMonths. It does not match the other unit (\HwFarOtherUnit) or the other gel of the same unit (\HwFarOtherGel). Frames of the bare gel, with nothing touching it, match their session's mean contact frame at \BlankVsFieldFar. Another lab's GelSight Mini shows the same ordering (orange in \cref{fig:signature}).
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig/fig_state_images.pdf}
+  \includegraphics[width=0.86\linewidth]{fig/fig_state_images.pdf}
   \caption{\textbf{What the hardware state looks like.} The mean contact frame of each hardware configuration (each session counted once) in one 4.7-mm region of the frame. Top: the fine band (190--370\,\si{\micro\metre}), with pixels within 60\,px of a printed marker greyed out. Bottom: the smooth illumination field relative to the mean of the four panels ($\pm$7 grey levels). The two halves of S2's sessions, different objects weeks apart, share a pattern that the other configurations do not.}
   \label{fig:stateimages}
 \end{figure}
 
 \paragraph{What the state is.}
-\Cref{fig:stateimages} shows the two parts of the state. Two tests locate the fine pattern. It does not move with the membrane: warping a bare-gel frame by the membrane's measured displacement lowers its match to the session's mean frame from \BlankVsFieldFar\ to \WarpedBlankVsFieldFar. The membrane moves by a median of only \WarpDispPx\,px, however, so this test is weak. The pattern does belong to the gel cartridge, because a new gel on the same unit and camera removes it. We therefore take it to belong to the cartridge and to be fixed in the camera's view, rather than to lie on the deforming surface. A non-uniform coating would behave this way. The smooth part, the illumination field, changes a little from session to session on the same hardware. Between two bare-gel frames of one session, the illumination moves by a median \DriftUse\ grey levels over \DriftUseContacts\ grasps, and by \DriftIdle\ between the last bare-gel frame of one session and the first of the next, with no contact in between, so it moves more while the sensor rests than while it is used. Within one configuration, a session's illumination field lies \LpDistWithinSthree--\LpDistWithinSone\ grey levels from the configuration's mean. The two units differ by \LpDistSoneStwo\ grey levels, and the two gels on unit 2 by \LpDistStwoSthree.
+\Cref{fig:stateimages} shows the two parts of the state. The fine pattern belongs to the gel cartridge, because a new gel on the same unit and camera removes it. We take it to be fixed in the camera's view rather than to lie on the deforming surface, as a non-uniform coating would be, although the test of this is weak (supplement). The smooth part, the illumination field, changes a little from session to session on the same hardware. Between two bare-gel frames of one session, the illumination moves by a median \DriftUse\ grey levels over \DriftUseContacts\ grasps, and by \DriftIdle\ from the end of one session to the start of the next, so it moves more at rest than in use. Within one configuration, a session's illumination field lies \LpDistWithinSthree--\LpDistWithinSone\ grey levels from the configuration's mean. The two units differ by \LpDistSoneStwo\ grey levels, and the two gels on unit 2 by \LpDistStwoSthree.
 
 \paragraph{The images record the hardware history.}
-The changes are sharp enough to date from the images alone. Correlating every pair of the 35 June and July sessions splits them into two blocks at July 9 to 10 and nowhere else, and the September and October sessions split at October 9. Our laboratory log had recorded a change of unit and four gel replacements. The images show only the two changes above. The operators confirmed these two against their notes, and the other two logged replacements left no trace in the images, so the timeline above is the one the images give. Because the log cannot serve as an independent reference, \cref{sec:trackerexp} tests the detector of \cref{sec:tracker}, which turns the same observation into a test that runs while the robot works, on spliced streams whose change points are known by construction.
+The changes are sharp enough to date from the images alone. Correlating every pair of the 35 June and July sessions splits them into two blocks at July 9 to 10 and nowhere else, and the September and October sessions split at October 9. The marker layouts of the gels change on the same two dates. Our laboratory log had recorded a change of unit and four gel replacements, but the images show only these two changes, which the operators confirmed against their notes. Because the log cannot serve as an independent reference, \cref{sec:trackerexp} tests the detector of \cref{sec:tracker} on spliced streams whose change points are known by construction.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{fig/fig_confound.pdf}
+  \includegraphics[width=0.9\linewidth]{fig/fig_confound.pdf}
   \caption{\textbf{Tying classes to hardware, under control.} SITR~\cite{sitr2025} pressed 20 objects on four GelSight Minis. We train on $20-k$ classes recorded on one Mini and $k$ classes recorded only on the test Mini, and test all classes on the test Mini (frozen DINOv2, MLP head; mean over 12 Mini pairs and class draws, band: 10th--90th percentile over pairs). Orange: raw images. Blue: the mean image of the test Mini subtracted from every image (full band, \cref{sec:second}).}
   \label{fig:confound}
 \end{figure}
