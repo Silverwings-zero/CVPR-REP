@@ -17,6 +17,12 @@
 
 \begin{document}
 \maketitle
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig/fig_method_overview.pdf}
+  \caption{\textbf{The method in one picture.} Top: at test time the robot averages the contacts it has made since the last change of hardware into a running estimate of the state, counting each object once, and subtracts the smooth part of the estimate's difference to the training mean from every test image (Algorithm~1 of the paper). A detector restarts the estimate when the unit or the gel is replaced. Bottom: when the encoder can be retrained, the same unlabelled stream is the target domain of CDAN+E. The images are whole frames from the fold that holds out campaign D and serve as an illustration, because the experiments read 192-px crops. The test image comes from the fifth session on S2, and the estimate holds the four S2 sessions before it. As in the experiments, the printed markers do not enter the means.}
+  \label{fig:overview}
+\end{figure*}
 
 \section{Data and protocol}
 \paragraph{Recording.} A GelSight Mini (native 1640$\times$1232, \SI{11.3}{\micro\metre}/px, \SI{18.8}{fps}) sits on one finger of a two-finger parallel gripper carried by a 7-DoF Franka Emika Panda arm, and an ATI Nano17 on the other finger (host-timestamped at 130--190\,Hz). Target normal forces are 0.5--5\,N and speed commands 10--100\,mm/s (see Motion below). Campaigns: A, June 15--22 (15 sessions); B, July 6--8 (15); C, July 9--13 (5); D, September 22 to October 15 (20). Every session holds one material. \EpRecorded\ episodes were recorded and accepted. \EpNoCrops\ episodes of campaign D have no span of eight consecutive frames in contact inside the stroke window, so the material experiments use \EpCrops\ episodes (\EpTrainABC\ in A--C, \EpTestD\ in D). Hardware: unit 1 with gel 1 from June 15 to July 9 (S1), unit 2 with gel 2 from July 10 to October 9, 18:42 (S2), unit 2 with gel 3 from the cork session of October 9, 19:37 (S3). The laboratory log recorded four gel replacements and a change of unit ``between campaigns''. The images show only the two changes above. Fine-pattern blocks, marker layouts and illumination fields agree on them, and the operators confirmed them against their notes. Campaign D also recorded bare-gel frames (a start frame and lubricant pre/post pairs) and, in seven sessions, a 3-s bare-gel lead-in before every grasp.
