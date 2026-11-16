@@ -41,11 +41,11 @@ For every session we form the position-wise mean of its contact crops, its \emph
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.72\linewidth]{fig/fig_state_images.pdf}
+  \includegraphics[width=0.66\linewidth]{fig/fig_state_images.pdf}
   \caption{\textbf{Appearance of the hardware state.} The mean contact frame of each configuration in one 4.7-mm region. Top: the fine band (190--370\,\si{\micro\metre}), marker pixels grayed out. Bottom: the smooth illumination field relative to the mean of the four panels ($\pm$7 gray levels). The two halves of S2's sessions, different objects weeks apart, share a pattern that the other configurations lack.}
   \label{fig:stateimages}
 \end{figure}
 
 \paragraph{Origin and stability of the state.}
 \Cref{fig:stateimages} shows the state's two components, a fine spatial pattern and a smooth illumination field. Two tests point to the origin of the fine pattern. Warping a bare-gel frame by the measured membrane displacement lowers its correlation with the session's mean contact frame from \BlankVsFieldFar\ to \WarpedBlankVsFieldFar, so the pattern stays fixed in the camera's view, although the median displacement of only \WarpDispPx\,px makes this test weak. Replacing the gel on the same unit removes the pattern, which links it to the gel cartridge and is consistent with a non-uniform coating.
-The smooth component varies modestly between sessions on the same hardware. Each session's illumination field differs from its configuration's mean by \LpDistWithinSthree--\LpDistWithinSone\ gray levels, against \LpDistSoneStwo\ between the two units and \LpDistStwoSthree\ between the two gels on unit 2. It drifts more while the sensor is idle between sessions than during use (\supp{W}).
+The smooth component varies modestly between sessions on the same hardware. Each session's illumination field differs from its configuration's mean by \LpDistWithinSthree--\LpDistWithinSone\ gray levels, and S2's field moved by \LpDistStwoJulSep\ over the summer break, against \LpDistSoneStwo\ between the two units and \LpDistStwoSthree\ between the two gels on unit 2. It drifts more while the sensor is idle between sessions than during use (\supp{W}).
