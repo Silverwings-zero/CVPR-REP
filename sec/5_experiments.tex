@@ -2,11 +2,11 @@
 \label{sec:exp}
 
 \paragraph{Protocol.}
-We test every recording of a material made on hardware other than the one it was learned on. Three folds hold out campaign D, campaign C, and campaigns A and B together, and each trains on the remaining campaigns (\cref{tab:folds}). This gives 55 test sessions. In 47 of them the material was learned on the other unit and gel, and in 8 on the other gel of the same unit. Every choice of the method, including the low-pass width and the detector's constants, was made on the fold that holds out D. For the fold that holds out A and B, which trains on later campaigns and tests on earlier ones, we committed a dated pre-registration with three directional predictions before training any model, and all three held (supplement). We report the share of a session's episodes classified correctly, averaged over the 55 sessions, with 95\pct\ bootstrap intervals over sessions, paired for differences between methods. We also report the share of test episodes assigned to the most predicted class, averaged over the folds, which exposes a collapse onto few classes.
+We test every session in which a material is touched with a different unit or gel than in training. Three folds hold out campaign D, campaign C, and campaigns A and B together, and each trains on the remaining campaigns (\cref{tab:folds}). This gives 55 test sessions. In 47 of them the material was learned on the other unit and gel, and in 8 on the other gel of the same unit. Every choice of the method, including the low-pass width and the detector's constants, was made on the fold that holds out D. For the fold that holds out A and B, which trains on later campaigns and tests on earlier ones, we committed a dated pre-registration with three directional predictions before training any model, and all three held (supplement). We report the share of a session's episodes classified correctly, averaged over the 55 sessions, with 95\pct\ bootstrap intervals over sessions, paired for differences between methods. We also report the share of test episodes assigned to the most predicted class, averaged over the folds, which exposes a collapse onto few classes.
 
 \begin{table}[t]
   \centering\footnotesize\setlength{\tabcolsep}{3.5pt}
-  \caption{\textbf{The three folds.} Test sessions are those whose material was learned on other hardware (unit and gel: S1 against S2; gel: S2 against S3).}
+  \caption{\textbf{The three folds.} Test sessions touch a material with a different unit or gel than in training (unit and gel: S1 against S2; gel: S2 against S3).}
   \label{tab:folds}
   \resizebox{\linewidth}{!}{%
   \begin{tabular}{@{}llrrrr@{}}
