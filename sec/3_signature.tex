@@ -1,7 +1,7 @@
 \section{The hardware state in a tactile image}
 \label{sec:signature}
 
-We first characterize the image structure associated with the sensor hardware and examine how it changes with use and hardware replacement. \Cref{sec:shortcut} then tests whether classifiers exploit this structure when material classes are associated with particular units or gels.
+We characterize the image structure associated with the sensor hardware and how it changes with use and replacement.
 
 \begin{figure}[t]
   \centering
@@ -47,5 +47,5 @@ For every session we form the position-wise mean of its contact crops, its \emph
 \end{figure}
 
 \paragraph{Origin and stability of the state.}
-\Cref{fig:stateimages} shows the state's two components, a fine spatial pattern and a smooth illumination field. Two tests point to the origin of the fine pattern. Warping a bare-gel frame by the measured membrane displacement lowers its correlation with the session's mean contact frame from \BlankVsFieldFar\ to \WarpedBlankVsFieldFar, so the pattern stays fixed in the camera's view, although the median displacement of only \WarpDispPx\,px makes this test weak. Replacing the gel on the same unit removes the pattern, which links it to the gel cartridge and is consistent with a non-uniform coating.
+\Cref{fig:stateimages} shows the state's two components, a fine spatial pattern and a smooth illumination field. Replacing the gel on the same unit removes the fine pattern, which links it to the gel cartridge and is consistent with a non-uniform coating. A weaker test suggests that the pattern stays fixed in the camera's view and does not move with the membrane (\supp{W}).
 The smooth component varies modestly between sessions on the same hardware. Each session's illumination field differs from its configuration's mean by \LpDistWithinSthree--\LpDistWithinSone\ gray levels, and S2's field moved by \LpDistStwoJulSep\ over the summer break, against \LpDistSoneStwo\ between the two units and \LpDistStwoSthree\ between the two gels on unit 2. It drifts more while the sensor is idle between sessions than during use (\supp{W}).
