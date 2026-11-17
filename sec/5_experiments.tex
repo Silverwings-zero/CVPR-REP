@@ -96,7 +96,7 @@ Row d is transductive, because the stream already contains the test contacts. We
 \subsection{Comparison with published methods}
 \label{sec:baselines}
 
-Every published method in \cref{tab:baselines} runs with its paper's default settings on the same encoder, training budget and stream. SDAT and MIC keep the better of two trade-off weights, chosen on the first seed, which favors them over our fixed weight (\supp{D}).
+Every published method in \cref{tab:baselines} runs with its paper's default settings, except DANN (\supp{D}), on the same encoder, training budget and stream. SDAT and MIC keep the better of two trade-off weights, chosen on the first seed, which favors them over our fixed weight (\supp{D}).
 
 \paragraph{Test time.}
 Four of the five test-time methods collapse on the robot's stream, to about \XpTtaBnAcc\pct. Per-batch BatchNorm, Tent, SAR and DeYO estimate normalization statistics from the current batch, which holds a single material here, so the statistics normalize it away. RoTTA, designed for correlated streams, is the one that works, gaining \XdRottaVsSrc\ points over the unadapted model. Image correction performs comparably without batch statistics or gradient updates, raising accuracy from \XpSrcAcc\ to \XpSrcReadAcc\pct, \XdSrcReadVsRotta\ points above RoTTA with an interval that includes zero (\XdSrcReadVsRottaLo\ to \XdSrcReadVsRottaHi). RoTTA is ahead only when A and B are held out (\XpTtaRottaFoldAB\ against \XpReadFoldAB\pct).
